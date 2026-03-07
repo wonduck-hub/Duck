@@ -1,0 +1,838 @@
+﻿@page "/WorkspaceDetail/{workspaceId:int}"
+@using System.Diagnostics
+@using BlazorDateRangePicker
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+@inject IWorkspaceRepositoryAsync WorkspaceRepository
+@inject IWorkListRepository WorkListRepository
+@inject IWorkRepository WorkRepository
+@inject IUserRepositoryAsync UserRepository
+@inject IWorkspaceUserRepository WorkspaceUserRepository
+@inject IUserWorkRepository UserWorkRepository
+@inject IWorkspaceWorkRepository WorkspaceWorkRepository
+
+@if (workspace == null)
+{
+    <h1>Error</h1>
+}
+else
+{
+    <h1>@workspace.Name</h1>
+}
+
+@if (workspaceUser == null)
+{
+    <div>로딩중...</div>
+}
+else
+{
+    <div class="top-row px-4 auth">
+        @if (workspaceUser.UserInvitationPermission)
+        {
+            <div style="margin-right:10px" @onclick="ShowAddUserDialog">
+                <img src="/images/plus-user.png" width="25" hight="25" />
+                Add user
+            </div>
+            <div style="margin-right:10px" @onclick="ShowUsersDialog">
+                <Icon Name="IconName.Wrench" Size="IconSize.x5" />
+                Users
+            </div>
+        }
+
+        @if (workspaceUser.TaskCreationPermission)
+        {
+            <button type="button" class="btn btn-primary" @onclick="@ShowAddCategoryDialogButton">Add new category</button>
+        }
+    </div>
+}
+
+@if (workListDic == null || workspaceUser == null)
+{
+    <h4>카테고리가 없습니다.</h4>
+}
+else
+{
+    foreach (var item in workListDic)
+    {
+        @if (!item.Key.IsDeleted)
+        {
+            <div class="container">
+                <section class="mx-auto my-5">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-title font-weight-bold d-flex justify-content-between align-items-center">
+                                <!--일부 작업만 보이기 기능-->
+                                <Dropdown>
+                                    <DropdownToggleButton Color="ButtonColor.Primary">표시</DropdownToggleButton>
+                                    <DropdownMenu>
+                                        <DropdownItem Type="ButtonType.Button" @onclick="( () => SetSetWorkVisibility(item.Key, WorkVisibleType.ALL))">전체</DropdownItem>
+                                        <DropdownItem Type="ButtonType.Button" @onclick="( () => SetSetWorkVisibility(item.Key, WorkVisibleType.WORKING))">작업 중</DropdownItem>
+                                        <DropdownItem Type="ButtonType.Button" @onclick="( () => SetSetWorkVisibility(item.Key, WorkVisibleType.BEFORE))">기간 외</DropdownItem>
+                                        <DropdownItem Type="ButtonType.Button" @onclick="( () => SetSetWorkVisibility(item.Key, WorkVisibleType.SUCCESS))">완료</DropdownItem>
+                                        <DropdownItem Type="ButtonType.Button" @onclick="( () => SetSetWorkVisibility(item.Key, WorkVisibleType.TIME_OUT))">미 완료</DropdownItem>
+                                    </DropdownMenu>
+                                </Dropdown>
+                                <input class="category-name" @onchange="@(e => UpdateCategory(e, item.Key))" value="@item.Key.Name" style="text-align: center;"></input>
+                                <img src="/images/trash.png" width="20" hight="20" @onclick="@( () => DeleteCategoryButton(item.Key) )"></img>
+                            </div>
+
+
+                            @if (item.Value == null)
+                            {
+                                <div>작업이 없습니다.</div>
+                            }
+                            else
+                            {
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th class="table-name">
+                                                작업 이름
+                                            </th>
+                                            <th class="table-status">
+                                                상태
+                                            </th>
+                                            <th>기간</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var v in item.Value)
+                                        {
+
+                                            @if (!v.IsDeleted)
+                                            {
+                                                workStatus = "오류";
+                                                workColor = "#ffffff";
+
+                                                @if (v.IsSuccess)
+                                                {
+                                                    @if (workVisible[item.Key] == WorkVisibleType.SUCCESS
+                                                    || workVisible[item.Key] == WorkVisibleType.ALL)
+                                                    {
+                                                        workStatus = "완료";
+                                                        workColor = "#49d59c";
+                                                    }
+                                                    else
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                else if (DateTime.Now < v.StartDate)
+                                                {
+                                                    @if (workVisible[item.Key] == WorkVisibleType.BEFORE
+                                                   || workVisible[item.Key] == WorkVisibleType.ALL)
+                                                    {
+                                                        workStatus = "작업 전";
+                                                        workColor = "#c6cdd5";
+                                                    }
+                                                    else
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                else if (v.StartDate <= DateTime.Now && DateTime.Now <= v.EndDate)
+                                                {
+                                                    @if (workVisible[item.Key] == WorkVisibleType.WORKING
+                                                   || workVisible[item.Key] == WorkVisibleType.ALL)
+                                                    {
+                                                        workStatus = "작업 중";
+                                                        workColor = "#fbc175";
+                                                    }
+                                                    else
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                else if (v.EndDate < DateTime.Now)
+                                                {
+                                                    @if (workVisible[item.Key] == WorkVisibleType.TIME_OUT
+                                                   || workVisible[item.Key] == WorkVisibleType.ALL)
+                                                    {
+                                                        workStatus = "기간 종료";
+                                                        workColor = "#e66a7e";
+                                                    }
+                                                    else
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    workStatus = "오류";
+                                                    workColor = "#ffffff";
+                                                }
+
+
+
+                                                <tr @onclick="@( () => ShowWorkDetail(v) )">
+                                                    <td class="table-name">@v.Name</td>
+                                                    <td class="table-status" style="background-color:@workColor;">
+                                                        @workStatus
+                                                    </td>
+                                                    @if (v.StartDate.HasValue && v.EndDate.HasValue)
+                                                    {
+                                                        <td>@v.StartDate.Value.ToString("yyyy/MM/dd") ~ @v.EndDate.Value.ToString("yyyy/MM/dd")</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td>오류</td>
+                                                    }
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            @if (workspaceUser.TaskCreationPermission)
+                            {
+                                <input type="button" class="btn btn-primary" value="Add task" @onclick="@( () => ShowAddWorkDialogButton(item.Key) )" />
+                            }
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        }
+    }
+}
+
+@if (workspaceUser != null && workspaceUser.UserInvitationPermission)
+{
+    <div class="top-row px-4 auth">
+        <button type="button" class="btn btn-danger" @onclick="@ShowDeleteWorkspaceDialogButton">Delete workspace</button>
+    </div>
+}
+
+
+@if (isShowWorkDetail)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail</h5>
+                </div>
+                <div class="modal-body">
+                    <label>작업 이름:</label>
+                    <input type="text" @bind="@selectedWork.Name" />
+                    <br />
+                    <label>기간:</label>
+                    <DateRangePicker @bind-StartDate="@selectedWork.StartDate" @bind-EndDate="@selectedWork.EndDate" />
+                    <br />
+                    <label>설명:</label>
+                    <br />
+                    <textarea @bind="@selectedWork.TaskDetails" rows="5" cols="35" placeholder="Detail..." style="resize:none;"></textarea>
+                    <br />
+                    @if (workspaceUser.UserInvitationPermission)
+                    {
+                        <label>멤버:</label>
+                        <ul class="list-group">
+                            @foreach (var u in selectedWorkMemberUserWork)
+                            {
+                                <li class="list-group-item list-group-item-action" @onclick="@( () => DeleteWorkMember(u) )">@u.User.UserName - @u.User.Email</li>
+                            }
+                        </ul>
+                        <label>추가:</label>
+                        <ul class="list-group">
+                            @foreach (var u in workspaceUserList)
+                            {
+                                <li class="list-group-item list-group-item-action" @onclick="@( () => AddWorkMember(u) )">@u.User.UserName - @u.User.Email</li>
+                            }
+                        </ul>
+                        <br />
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   @bind="selectedWork.IsSuccess" @onclick="( () => SuccessWork(selectedWork) )" />
+                            <label class="form-check-label">완료</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (workspaceUser.TaskCreationPermission)
+                    {
+                        <button type="button" class="btn btn-success" @onclick="@( () => UpdateWorkDialogButton() )">Save</button>
+                        <button type="button" class="btn btn-danger" @onclick="@( () => DeleteWorkDialogButton() )">Delete</button>
+                    }
+                    <button type="button" class="btn btn-secondary" @onclick="CloseWorkDetailDialogButton">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowAddCategoryDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add new category</h5>
+                </div>
+                <div class="modal-body">
+                    Category name:
+                    <input type="text" @bind="@newWorkList.Name" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="AddWorkList">Add</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddCategoryDialogButton">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowAddWorkDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add new work</h5>
+                </div>
+                <div class="modal-body">
+                    <label>작업 이름:</label>
+                    <input type="text" @bind="newWork.Name" />
+                    <br />
+                    <label>작업 기간:</label>
+                    <DateRangePicker @bind-StartDate="newWork.StartDate" @bind-EndDate="newWork.EndDate" />
+                    <br />
+                    <label>설명:</label>
+                    <br />
+                    <textarea @bind="newWork.TaskDetails" rows="5" cols="35" placeholder="Detail..." style="resize:none;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="AddWorks">Add</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddWorkDialogButton">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowDeleteWorkspaceDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">정말로 삭제 하시겠습니까?</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" @onclick="DeleteWorkspace">Delete</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteWorkspaceDialogButton">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowAddUserDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Join user</h5>
+                </div>
+                <div class="modal-body">
+                    User name:
+                    <input type="text" @onchange="@( e => SearchUser(e))" placeholder="Enter user name..." />
+                    <br />
+                    <hr />
+                    @if (searchedUser == null)
+                    {
+                        <div>해당 이름의 유저 없음.</div>
+                    }
+                    else
+                    {
+                        <div>
+                            Name: @searchedUser.UserName <br />
+                            Email: @searchedUser.Email<br />
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" @bind="searchedUserUserInvitationPermission" />
+                            <label class="form-check-label">관리자 권한</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" @bind="searchedUserTaskCreationPermission" />
+                            <label class="form-check-label">작업 권한</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" disabled="@disableAddUserButton" @onclick="AddUser">Add</button>
+                    <button type="button" class="btn btn-danger" disabled="@disableDeleteUserButton" @onclick="DeleteUser">Delete</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddUserDialog">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowUsersDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Users</h5>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        @foreach (var item in workspaceUserList)
+                        {
+                            if (user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value != item.User.Id)
+                            {
+                                <li class="list-group-item list-group-item-action" @onclick="() => SelectUser(item)">@item.User.UserName</li>
+                            }
+                        }
+                    </ul>
+                    @if (selectedWorkspaceUser != null)
+                    {
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" @bind="selectedWorkspaceUser.UserInvitationPermission" />
+                            <label class="form-check-label">관리자 권한</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" @bind="selectedWorkspaceUser.TaskCreationPermission" />
+                            <label class="form-check-label">작업 권한</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="() => SaveUsers(selectedWorkspaceUser)">Save</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseUsersDialog">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    enum WorkVisibleType
+    {
+        ALL = 0,
+        WORKING = 1,
+        BEFORE = 2,
+        SUCCESS = 3,
+        TIME_OUT = 4,
+    };
+
+    #region 변수들
+    [Parameter]
+    public int WorkspaceId { get; set; }
+
+    private WorkspaceUser workspaceUser { get; set; }
+
+    private Workspace workspace;
+
+    private bool isShowAddCategoryDialog = false;
+
+    private bool isShowAddWorkDialog = false;
+
+    private WorkList newWorkList = null;
+
+    private Work newWork = null;
+
+    private WorkList selectedWorkList = null;
+
+    private Dictionary<WorkList, List<Work>> workListDic = new Dictionary<WorkList, List<Work>>();
+
+    List<WorkList> tempWorkLists = null;
+
+    private bool isShowDeleteWorkspaceDialog = false;
+
+    private bool isShowWorkDetail = false;
+
+    private Work selectedWork = null;
+
+    private bool isShowAddUserDialog = false;
+
+    private bool disableAddUserButton = true;
+
+    private bool disableDeleteUserButton = true;
+
+    private User searchedUser = null;
+
+    private bool searchedUserTaskCreationPermission = false;
+
+    private bool searchedUserUserInvitationPermission = false;
+
+    private List<WorkspaceUser> workspaceUserList = null;
+
+    private List<UserWork> selectedWorkMemberUserWork = null;
+    #endregion
+
+    #region 표시 임시 변수들
+    private string workStatus = null;
+
+    private string workColor = null;
+
+    private Dictionary<WorkList, WorkVisibleType> workVisible;
+    #endregion
+
+    #region 유저 설정 저장용
+    private bool isShowUsersDialog = false;
+
+    private WorkspaceUser selectedWorkspaceUser = null;
+
+    #endregion
+
+    #region chatHub
+    private HubConnection chatHubConnection; // SignalR 허브 연결용
+    ChatRoom notificationChatRoom = null;
+    #endregion
+
+    AuthenticationState authState;
+    ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // AuthenticationStateProvider.GetAuthenticationStateAsync() 메서드는
+        // 현재 인증 상태를 나타내는 AuthenticationState 객체를 비동기적으로 반환하는 메서드다.
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            // 로그인 안된 경우
+            NavigationManager.NavigateTo("Identity/Account/Login");
+        }
+
+        workspace = await WorkspaceRepository.GetWorkspaceByIdAsync(WorkspaceId);
+
+        chatHubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+            .Build();
+
+        await chatHubConnection.StartAsync();
+        var chatRooms = workspace.ChatRooms;
+
+        foreach (var i in chatRooms)
+        {
+            if (i.IsNotification)
+            {
+                notificationChatRoom = i;
+            }
+        }
+        if (chatHubConnection.State == HubConnectionState.Connected)
+        {
+            await chatHubConnection.SendAsync("JoinRoom", notificationChatRoom);
+        }
+
+        await ReloadData();
+    }
+
+    private async Task ReloadData()
+    {
+        #region WorkListDic
+        workListDic = new Dictionary<WorkList, List<Work>>();
+        workVisible = new Dictionary<WorkList, WorkVisibleType>();
+
+        tempWorkLists = await WorkListRepository.GetWorkListsByWorkspaceIdAsync(workspace.Id);
+
+        foreach (var item in tempWorkLists)
+        {
+            List<Work> tempWorks = await WorkRepository.GetWorkByListIdAsync(item.Id);
+            workListDic.Add(item, tempWorks);
+            workVisible.Add(item, WorkVisibleType.ALL);
+        }
+        #endregion
+
+        #region WorkspaceUserList
+        workspaceUserList = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceId(WorkspaceId);
+        #endregion
+
+        workspaceUser = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceIdUserId(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, WorkspaceId);
+
+    }
+
+    private async Task AddWorkList(MouseEventArgs e)
+    {
+
+        newWorkList.Created = DateTimeOffset.Now;
+        // nameidentifier claim을 찾아 그 값을 CreateUserId에 대입하는 코드
+        newWorkList.CreateUserId = user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        newWorkList.WorkspaceId = workspace.Id;
+
+        await WorkListRepository.AddWorkListAsync(newWorkList);
+
+        newWorkList = null;
+        isShowAddCategoryDialog = false;
+
+        await ReloadData();
+    }
+
+    private void SetSetWorkVisibility(WorkList w, WorkVisibleType v)
+    {
+        workVisible[w] = v;
+    }
+
+    #region 작업에 유저 할당
+    public async Task AddWorkMember(WorkspaceUser wu)
+    {
+        UserWork newUserWork = new UserWork(selectedWork.Id, wu.User.Id, WorkspaceId);
+        await UserWorkRepository.AddUserWorkAsync(newUserWork);
+
+        selectedWorkMemberUserWork = await UserWorkRepository.GetUserWorkByWorkIdAsync(selectedWork.Id);
+
+        string message =
+            $"{user.Identity.Name}님이 {selectedWork.Name} 작업에 {wu.User.UserName}님을 추가하였습니다.";
+        await chatHubConnection.SendAsync("SendMessageToChatRoom", notificationChatRoom,
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, message, true);
+    }
+
+    public async Task DeleteWorkMember(UserWork wu)
+    {
+        await UserWorkRepository.RemoveUserWorkAsync(wu.UserId, wu.WorkId, wu.WorkspaceId);
+
+        selectedWorkMemberUserWork = await UserWorkRepository.GetUserWorkByWorkIdAsync(selectedWork.Id);
+
+        string message =
+            $"{user.Identity.Name}님이 {selectedWork.Name} 작업에 {wu.User.UserName}님을 제거하였습니다.";
+        await chatHubConnection.SendAsync("SendMessageToChatRoom", notificationChatRoom,
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, message, true);
+    }
+    #endregion
+
+    #region 카테고리
+    private void ShowAddCategoryDialogButton()
+    {
+        newWorkList = new WorkList();
+        isShowAddCategoryDialog = true;
+    }
+
+    private void CloseAddCategoryDialogButton()
+    {
+        newWorkList = null;
+        isShowAddCategoryDialog = false;
+    }
+
+    private async Task DeleteCategoryButton(WorkList wl)
+    {
+        await WorkListRepository.DeleteWorkListById(wl.Id);
+
+        await ReloadData();
+    }
+
+    private async Task UpdateCategory(ChangeEventArgs e, WorkList wl)
+    {
+        wl.Name = e.Value.ToString();
+        await WorkListRepository.UpdateWorkListAsync(wl);
+
+        await ReloadData();
+    }
+    #endregion
+
+    #region Work
+    private async Task AddWorks()
+    {
+
+        newWork.Created = DateTimeOffset.Now;
+        newWork.CreateUserId = user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        newWork.ListId = selectedWorkList.Id;
+
+        await WorkRepository.AddWorkAsync(newWork);
+        await WorkspaceWorkRepository.AddWorkspaceWorkAsync(new WorkspaceWork(newWork.Id, WorkspaceId));
+
+        newWork = null;
+        isShowAddWorkDialog = false;
+
+        await ReloadData();
+    }
+
+    private void ShowDeleteWorkspaceDialogButton()
+    {
+        isShowDeleteWorkspaceDialog = true;
+    }
+
+    private void CloseDeleteWorkspaceDialogButton()
+    {
+        isShowDeleteWorkspaceDialog = false;
+        newWork = null;
+        isShowAddWorkDialog = false;
+    }
+
+    private async Task DeleteWorkspace()
+    {
+        await WorkspaceRepository.DeleteWorkspaceById(WorkspaceId);
+
+        isShowDeleteWorkspaceDialog = false;
+
+        NavigationManager.NavigateTo("/Index");
+    }
+
+    private void ShowAddWorkDialogButton(WorkList WorkList)
+    {
+        Debug.Assert(WorkList != null, "WorkList is null");
+        newWork = new Work();
+        selectedWorkList = WorkList;
+        isShowAddWorkDialog = true;
+    }
+
+    private async Task ShowWorkDetail(Work w)
+    {
+        selectedWork = w;
+        selectedWorkMemberUserWork = await UserWorkRepository.GetUserWorkByWorkIdAsync(w.Id);
+        isShowWorkDetail = true;
+    }
+
+    private void CloseWorkDetailDialogButton()
+    {
+        selectedWork = new Work();
+        isShowWorkDetail = false;
+    }
+
+    private async Task UpdateWorkDialogButton()
+    {
+        if (selectedWork.IsSuccess)
+        {
+            selectedWork.SuccessDate = DateTimeOffset.Now;
+        }
+        else
+        {
+            selectedWork.SuccessDate = null;
+        }
+
+        await WorkRepository.UpdateWorkAsync(selectedWork);
+
+        selectedWork = new Work();
+        isShowWorkDetail = false;
+
+        await ReloadData();
+    }
+
+    private async Task DeleteWorkDialogButton()
+    {
+        await WorkspaceWorkRepository.RemoveWorkspaceWorkAsync(selectedWork.Id, WorkspaceId);
+        await WorkRepository.DeleteWorkById(selectedWork.Id);
+
+        selectedWork = new Work();
+        isShowWorkDetail = false;
+
+        await ReloadData();
+    }
+
+    private void CloseAddWorkDialogButton()
+    {
+        newWork = new Work();
+        isShowAddWorkDialog = false;
+    }
+
+    private async Task SuccessWork(Work w)
+    {
+        if (!w.IsSuccess)
+        {
+            string message = $"{w.Name}작업을 완료 했습니다.";
+            await chatHubConnection.SendAsync("SendMessageToChatRoom", notificationChatRoom,
+                user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, message, true);
+        }
+    }
+    #endregion
+
+    #region AddUser
+    private void ShowAddUserDialog()
+    {
+        isShowAddUserDialog = true;
+        disableAddUserButton = true;
+        disableDeleteUserButton = true;
+    }
+
+    private void CloseAddUserDialog()
+    {
+        isShowAddUserDialog = false;
+        searchedUser = null;
+        disableAddUserButton = true;
+        disableDeleteUserButton = true;
+    }
+
+    private async Task AddUser()
+    {
+        Debug.Assert(searchedUser != null);
+        Debug.Assert(searchedUser.Id != null);
+
+        WorkspaceUser wu = new WorkspaceUser(searchedUser.Id, WorkspaceId, searchedUserUserInvitationPermission, searchedUserTaskCreationPermission);
+        await WorkspaceUserRepository.AddWorkspaceUserAsync(wu);
+
+        string message =
+            $"{user.Identity.Name}님이 {searchedUser.UserName}님을 초대 했습니다.";
+        await chatHubConnection.SendAsync("SendMessageToChatRoom", notificationChatRoom,
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, message, true);
+
+        searchedUser = null;
+
+        await ReloadData();
+
+        isShowAddUserDialog = false;
+    }
+
+    private async Task DeleteUser()
+    {
+        Debug.Assert(searchedUser != null);
+        Debug.Assert(searchedUser.Id != null);
+
+        string message =
+            $"{user.Identity.Name}님이 {searchedUser.UserName}님을 퇴장 시켰습니다.";
+        await chatHubConnection.SendAsync("SendMessageToChatRoom", notificationChatRoom,
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, message, true);
+
+        await WorkspaceUserRepository.RemoveWorkspaceUserAsync(searchedUser.Id, WorkspaceId);
+
+        searchedUser = null;
+
+        await ReloadData();
+
+        isShowAddUserDialog = false;
+    }
+
+    private async Task SearchUser(ChangeEventArgs e)
+    {
+        searchedUser = await UserRepository.GetFirstUserByName(e.Value.ToString());
+
+        if (searchedUser == null)
+        {
+            disableAddUserButton = true;
+            disableDeleteUserButton = true;
+        }
+        else
+        {
+            disableAddUserButton = false;
+            disableDeleteUserButton = false;
+        }
+    }
+
+    #endregion
+
+    #region 유저들 권한 설정
+    private void ShowUsersDialog()
+    {
+        isShowUsersDialog = true;
+    }
+
+    private void CloseUsersDialog()
+    {
+        isShowUsersDialog = false;
+    }
+
+    private async Task SaveUsers(WorkspaceUser wu)
+    {
+        await WorkspaceUserRepository.UpdateWorkspaceUserAsync(wu);
+        isShowUsersDialog = false;
+    }
+
+    private void SelectUser(WorkspaceUser wu)
+    {
+        selectedWorkspaceUser = wu;
+    }
+    #endregion
+
+}

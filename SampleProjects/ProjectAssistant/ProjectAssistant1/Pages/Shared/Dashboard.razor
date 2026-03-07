@@ -1,0 +1,369 @@
+﻿@page "/Dashboard"
+@using System.Diagnostics
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+@inject IWorkspaceRepositoryAsync WorkspaceRepository
+@inject IWorkListRepository WorkListRepository
+@inject IWorkRepository WorkRepository
+@inject IUserRepositoryAsync UserRepository
+@inject IWorkspaceUserRepository WorkspaceUserRepository
+@inject IUserWorkRepository UserWorkRepository
+@inject IWorkspaceWorkRepository WorkspaceWorkRepository
+
+<h3>Dashboard</h3>
+<hr />
+
+
+@if (workspaceUserList.Count == 0)
+{
+    <div>포함되어 있는 워크스페이스가 없습니다.</div>
+}
+else
+{
+    <select class="form-select" @onchange="OnWorkspaceChanged">
+        @foreach(var item in workspaceUserList)
+        {
+            <option value="@item.Workspace.Id">@item.Workspace.Name</option>
+        }
+    </select>
+}
+<br />
+
+<div class="row" style="margin-bottom: 20px">
+    <div class="col-sm-6">
+        <Card>
+            <CardHeader Style="text-align: center;">
+                Status
+            </CardHeader>
+            <CardBody>
+                <DoughnutChart @ref="workStatusDoughnutChart" Height="450" Class="mb-4" />
+            </CardBody>
+        </Card>
+    </div>
+    <div class="col-sm-6">
+        <Card Style="height: 100%;">
+            <CardHeader>
+                Colaboraters
+            </CardHeader>
+            <CardBody Style="overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="table-name">
+                                이름
+                            </th>
+                            <th class="table-status">
+                                이메일
+                            </th>
+                            <th class="table-status">
+                                완료 작업 수
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in selectedWorkspaceUsers)
+                        {
+                            int successCount = 0;
+
+                            foreach (var w in userWorkList)
+                            {
+                                if (w.User.Id == item.User.Id && w.Work.IsSuccess && !w.Work.IsDeleted)
+                                {
+                                    ++successCount;
+                                }
+                            }
+
+                            <tr>
+                                <td>
+                                    @item.User.UserName
+                                </td> 
+                                <td>
+                                    @item.User.Email
+                                </td>
+                                <td style="text-align: center">
+                                    @successCount
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </CardBody>
+        </Card>
+    </div>
+</div>
+
+<Card>
+    <CardHeader Style="text-align: center">
+        월별 완료 현황
+    </CardHeader>
+    <CardBody>
+        <div data-mdb-input-init class="form-outline" style="width: 22rem;">
+            <label>Year : </label>
+            <input step="1" value="@DateTimeOffset.Now.Year" @onchange="UpdateMonthlyCompletionBarChart" type="number" />
+        </div>
+        <BarChart @ref="monthlyCompletionBarChart" Height="500" Class="mb-4" />
+    </CardBody>
+</Card>
+
+<br />
+
+<!--
+    TODO:
+    유저별 할당된 작업 리스트
+    월별 작업 클리어 차트
+    가장 많은 일을 처리한 유저
+-->
+
+@code {
+    private List<UserWork> userWorkList = null;
+    private List<WorkspaceUser> workspaceUserList = new List<WorkspaceUser>();
+    private List<WorkspaceUser> selectedWorkspaceUsers = new List<WorkspaceUser>();
+    private int? selectedWorkspaceId = null;
+
+    #region work status Doughnut char
+    private DoughnutChart workStatusDoughnutChart = null;
+    private DoughnutChartOptions workStatusDoughnutChartOptions = default!;
+    private ChartData workStatusDoughnutChartData = default!;
+    #endregion
+
+    #region 연간 완료 차트
+    private BarChart monthlyCompletionBarChart = null;
+    private BarChartOptions monthlyCompletionBarChartOptions = default!;
+    private ChartData monthlyCompletionBarChartData = default!;
+    private int selectedYear = DateTimeOffset.Now.Year;
+    #endregion
+
+    private Random random = new();
+
+    AuthenticationState authState;
+    ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // AuthenticationStateProvider.GetAuthenticationStateAsync() 메서드는
+        // 현재 인증 상태를 나타내는 AuthenticationState 객체를 비동기적으로 반환하는 메서드다.
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            // 로그인 안된 상태
+            NavigationManager.NavigateTo("Identity/Account/Login");
+        }
+
+        // 로드 데이터
+        await LoadDataAsync();
+
+        // 차트 설정
+        if (selectedWorkspaceId != null)
+        {
+            await SettingWorkStatusDoughnutChart();
+            await SettingMonthlyCompletionBarChart();
+        }
+    }
+
+    protected async Task SettingWorkStatusDoughnutChart()
+    {
+        var workStatusLabels = new List<string> { "작업 전", "작업 중", "작업 종료", "완료" };
+        var workStatusDatasets = new List<IChartDataset>();
+
+        var tempWorkspaceWork = await WorkspaceWorkRepository.GetWorkspaceWorkByWorkspaceIdAsync((int)selectedWorkspaceId);
+
+        var dataset1 = new DoughnutChartDataset()
+        {
+            Data = new List<double> {0, 0, 0, 0},
+            BackgroundColor = new List<string> { "#c6cdd5",
+                                                    "#fbc175",
+                                                    "#e66a7e",
+                                                    "#49d59c" },
+            BorderColor = new List<string> { "#c6cdd5",
+                                                "#fbc175",
+                                                "#e66a7e",
+                                                "#49d59c" },
+            BorderWidth = new List<double> { 0 },
+        };
+        foreach(var ww in tempWorkspaceWork)
+        {
+            if (ww.Work.IsSuccess)
+            {
+                dataset1.Data[3]++;
+            }
+            else
+            {
+                if (DateTime.Now < ww.Work.StartDate)
+                {
+                    dataset1.Data[0]++;
+                }
+                else if (ww.Work.StartDate < DateTime.Now && DateTime.Now < ww.Work.EndDate)
+                {
+                    dataset1.Data[1]++;
+                }
+                else if (ww.Work.EndDate < DateTime.Now)
+                {
+                    dataset1.Data[2]++;
+                }
+            }
+        }
+        workStatusDatasets.Add(dataset1);
+
+        workStatusDoughnutChartData = new ChartData
+        {
+            Labels = workStatusLabels,
+            Datasets = workStatusDatasets
+        };
+
+        workStatusDoughnutChartOptions = new DoughnutChartOptions();
+        workStatusDoughnutChartOptions.Responsive = true;
+
+        workStatusDoughnutChartOptions.Plugins.Title!.Text = "작업들";
+        workStatusDoughnutChartOptions.Plugins.Title.Display = true;
+    }
+
+    protected async Task SettingMonthlyCompletionBarChart()
+    {
+        var monthlyCompletionLabels = new List<string> { "1월", "2월", "3월", "4월",
+                                                         "5월", "6월", "7월", "8월",
+                                                         "9월", "10월", "11월", "12월"};
+        var monthlyCompletionDatasets = new List<IChartDataset>();
+
+        var tempWorkspaceWork = await WorkspaceWorkRepository.GetWorkspaceWorkByWorkspaceIdAsync((int)selectedWorkspaceId);
+
+        var monthlyCompletionDataset = new BarChartDataset()
+            {
+                Data = new List<double> { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                BackgroundColor = new List<string> { "#49d59c" },
+                BorderColor = new List<string> { "#49d59c" },
+                BorderWidth = new List<double> { 0 },
+            };
+
+        foreach (var ww in tempWorkspaceWork)
+        {
+            if (ww.Work.IsSuccess && selectedYear == ww.Work.SuccessDate.Value.Year)
+            {
+                int tempMonth = ww.Work.SuccessDate.Value.Month;
+
+                Debug.Assert(tempMonth >= 1 && tempMonth <= 12);
+
+                switch (tempMonth)
+                {
+                    case 1:
+                        ++monthlyCompletionDataset.Data[0];
+                        break;
+                    case 2:
+                        ++monthlyCompletionDataset.Data[1];
+                        break;
+                    case 3:
+                        ++monthlyCompletionDataset.Data[2];
+                        break;
+                    case 4:
+                        ++monthlyCompletionDataset.Data[3];
+                        break;
+                    case 5:
+                        ++monthlyCompletionDataset.Data[4];
+                        break;
+                    case 6:
+                        ++monthlyCompletionDataset.Data[5];
+                        break;
+                    case 7:
+                        ++monthlyCompletionDataset.Data[6];
+                        break;
+                    case 8:
+                        ++monthlyCompletionDataset.Data[7];
+                        break;
+                    case 9:
+                        ++monthlyCompletionDataset.Data[8];
+                        break;
+                    case 10:
+                        ++monthlyCompletionDataset.Data[9];
+                        break;
+                    case 11:
+                        ++monthlyCompletionDataset.Data[10];
+                        break;
+                    case 12:
+                        ++monthlyCompletionDataset.Data[11];
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        monthlyCompletionDatasets.Add(monthlyCompletionDataset);
+
+        monthlyCompletionBarChartData = new ChartData
+            {
+                Labels = monthlyCompletionLabels,
+                Datasets = monthlyCompletionDatasets
+            };
+
+        monthlyCompletionBarChartOptions = new BarChartOptions();
+        monthlyCompletionBarChartOptions.Responsive = true;
+        monthlyCompletionBarChartOptions.Interaction = new Interaction { Mode = InteractionMode.X };
+        monthlyCompletionBarChartOptions.IndexAxis = "x";
+
+        monthlyCompletionBarChartOptions.Scales.X!.Title!.Text = "월";
+        monthlyCompletionBarChartOptions.Scales.X.Title.Display = true;
+
+        monthlyCompletionBarChartOptions.Scales.Y!.Title!.Text = "완료 수";
+        monthlyCompletionBarChartOptions.Scales.Y.Max = monthlyCompletionDataset.Data.Max() + 1;
+        monthlyCompletionBarChartOptions.Scales.Y.Title.Display = true;
+
+        monthlyCompletionBarChartOptions.Plugins.Legend.Display = false;
+    }
+
+    protected async Task LoadDataAsync()
+    {
+        workspaceUserList = await WorkspaceUserRepository.GetWorkspaceUserByUserId(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+        if (workspaceUserList.Count > 0)
+        {
+            selectedWorkspaceId = workspaceUserList[0].WorkspaceId;
+            selectedWorkspaceUsers = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceId((int)selectedWorkspaceId);
+
+            userWorkList = await UserWorkRepository.GetUserWorkByWorkspaceIdAsync((int)selectedWorkspaceId);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (selectedWorkspaceId != null)
+            {
+                await workStatusDoughnutChart.InitializeAsync(workStatusDoughnutChartData, workStatusDoughnutChartOptions);
+                await monthlyCompletionBarChart.InitializeAsync(monthlyCompletionBarChartData, monthlyCompletionBarChartOptions);
+            }
+        }
+        else
+        {
+            if (selectedWorkspaceId != null)
+            {
+                await workStatusDoughnutChart.InitializeAsync(workStatusDoughnutChartData, workStatusDoughnutChartOptions);
+                await monthlyCompletionBarChart.InitializeAsync(monthlyCompletionBarChartData, monthlyCompletionBarChartOptions);
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected async Task OnWorkspaceChanged(ChangeEventArgs e)
+    {
+        selectedWorkspaceId = int.Parse(e.Value.ToString());
+        selectedWorkspaceUsers = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceId((int)selectedWorkspaceId);
+
+        // 선택된 워크스페이스를 사용하는 코드
+
+        await SettingWorkStatusDoughnutChart();
+        await SettingMonthlyCompletionBarChart();
+
+        await workStatusDoughnutChart.UpdateAsync(workStatusDoughnutChartData, workStatusDoughnutChartOptions);
+        await monthlyCompletionBarChart.UpdateAsync(monthlyCompletionBarChartData, monthlyCompletionBarChartOptions);
+    }
+    private async Task UpdateMonthlyCompletionBarChart(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out selectedYear))
+
+        await SettingMonthlyCompletionBarChart();
+        await monthlyCompletionBarChart.UpdateAsync(monthlyCompletionBarChartData, monthlyCompletionBarChartOptions);
+    }
+}

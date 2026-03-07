@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="DemoLAB.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout
+    Padding="30,0"
+    Spacing="25">
+
+            <Grid 
+                x:Name="ImageGrid"
+                RowDefinitions="Auto,Auto,Auto"
+                ColumnDefinitions="Auto,Auto,Auto"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                Padding="10">
+                <!-- 첫 번째 행 -->
+                <Rectangle Grid.Row="0" Grid.Column="0" Fill="LightGray" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="0" Grid.Column="1" Fill="LightBlue" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="0" Grid.Column="2" Fill="LightGreen" WidthRequest="100" HeightRequest="100"/>
+
+                <!-- 두 번째 행 -->
+                <Rectangle Grid.Row="1" Grid.Column="0" Fill="LightPink" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="1" Grid.Column="1" Fill="LightYellow" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="1" Grid.Column="2" Fill="LightCoral" WidthRequest="100" HeightRequest="100"/>
+
+                <!-- 세 번째 행 -->
+                <Rectangle Grid.Row="2" Grid.Column="0" Fill="LightSkyBlue" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="2" Grid.Column="1" Fill="LightSalmon" WidthRequest="100" HeightRequest="100"/>
+                <Rectangle Grid.Row="2" Grid.Column="2" Fill="LightSteelBlue" WidthRequest="100" HeightRequest="100"/>
+                </Grid>
+
+            <Label
+            Text="DemoLAB!"
+            Style="{StaticResource Headline}"
+            SemanticProperties.HeadingLevel="Level1" />
+
+            <Label
+                x:Name="RawPathLabel"
+                Style="{StaticResource SubHeadline}"
+                SemanticProperties.Description="Level2"/>
+
+            <Button 
+                x:Name="LoadBtn"
+                Text="Load"
+                HorizontalOptions="Fill"
+                Clicked="LoadBtn_Clicked"/>
+
+            <Button
+                x:Name="ScreenShotBtn"
+                Text="Screen Shot"
+                HorizontalOptions="Fill" 
+                Clicked="ScreenShotBtn_Clicked"/>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,10 @@
+﻿@page
+@model AccessDeniedModel
+@{
+    ViewData["ScheduleDetail"] = "Access denied";
+}
+
+<header>
+    <h1 class="text-danger">@ViewData["ScheduleDetail"]</h1>
+    <p class="text-danger">You do not have access to this resource.</p>
+</header>

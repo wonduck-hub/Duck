@@ -1,0 +1,12 @@
+﻿@page
+@model DownloadPersonalDataModel
+@{
+    ViewData["ScheduleDetail"] = "Download Your Data";
+    ViewData["ActivePage"] = ManageNavPages.PersonalData;
+}
+
+<h3>@ViewData["ScheduleDetail"]</h3>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

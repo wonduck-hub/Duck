@@ -1,0 +1,828 @@
+﻿@page "/ChatPage"
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using System.Diagnostics
+@using System.IO
+@using OpenCvSharp
+
+@inject IJSRuntime JSRuntime
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IWorkspaceRepositoryAsync WorkspaceRepository
+@inject IWorkspaceUserRepository WorkspaceUserRepository
+@inject IChatRoomRepository ChatRoomRepository
+@inject NavigationManager NavigationManager
+@inject IVotRepository VotRepository
+@inject IVotesRepository VotesRepository
+@inject IUserRepositoryAsync UserRepository
+
+<h1>Chat</h1>
+<hr />
+<br />
+
+@if (workspaceUserList.Count == 0)
+{
+    <div>포함되어 있는 워크스페이스가 없습니다.</div>
+}
+else
+{
+    @if (workspaceUser == null)
+    {
+        <div>로딩중...</div>
+    }
+    else
+    {
+        <select class="form-select" @onchange="OnWorkspaceChanged">
+            @foreach (var item in workspaceUserList)
+            {
+                <option value="@item.Workspace.Id">@item.Workspace.Name</option>
+            }
+        </select>
+
+        <!--ChatRoom 추가 삭제 버튼-->
+        <div class="top-row px-4 auth">
+            @if (workspaceUser.TaskCreationPermission)
+            {
+                <button type="button" class="btn btn-primary" style="margin-right:auto"
+                        @onclick="ShowAddVotDialog">
+                    Add vote
+                </button>
+                <button type="button" class="btn btn-primary" style="margin-right:10px"
+                        @onclick="ShowAddChatRoomDialogButton">
+                    Add new ChatRoom
+                </button>
+                <button type="button" class="btn btn-danger"
+                        @onclick="ShowDeleteChatRoomDialog">
+                    Delete ChatRoom
+                </button>
+            }
+        </div>
+    }
+
+    <hr />
+
+    <section>
+        <div class="container py-5">
+
+            <div class="row">
+
+                <!--채팅 리스트-->
+                <div class="col-md-6 col-lg-7 col-xl-8" id="chat-container">
+                    @if (selectedChatRoom != null)
+                    {
+                        <h5 class="font-weight-bold mb-3 text-center text-lg-start">@selectedChatRoom.Name</h5>
+                        <ul class="list-unstyled"
+                            style="max-height: 50vh; overflow-y:auto; display:flex; flex-direction: column-reverse;">
+                            @foreach (Chat c in messages)
+                            {
+                                <li class="d-flex justify-content-start mb-4">
+                                    @if (!c.IsNotification)
+                                    {
+                                        <img src="/images/default-user-icon.png" alt="avatar"
+                                             class="rounded-circle d-flex align-self-start me-3 shadow-1-strong" width="30">
+                                    }
+
+                                    @if (c.IsNotification)
+                                    {
+                                        <div class="card" style="width:100%;">
+                                            <div class="card-header d-flex justify-content-center p-3"
+                                                 style="min-width:200px; width:auto; padding:0.5rem !important;">
+                                                <p class="fw-bold mb-0">공지</p>
+                                                <p class="text-muted small mb-0" style="text-align: left; font-size: 12px; align-items: flex-end;">
+
+                                                </p>
+                                            </div>
+                                            @if (c.IsImage)
+                                            {
+                                                <div class="card-body">
+                                                    <p class="mb-0">
+                                                        <img src="@c.Text" alt="@c.Text" width="200" height="200"
+                                                             @onclick="@(() => ShowImageDetailDialog(c.Text))" />
+                                                    </p>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="card-body" style="text-align:center;">
+                                                    <p class="mb-0">
+                                                        @c.Text
+                                                    </p>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="card">
+                                            <div class="card-header d-flex justify-content-between p-3"
+                                                 style="min-width:200px; width:auto; padding:0.5rem !important;">
+                                                <p class="fw-bold mb-0">@c.User.UserName</p>
+                                                <p class="text-muted small mb-0" style="text-align: left; font-size: 12px; align-items: flex-end;">
+                                                    <i class="far fa-clock">
+                                                    </i>@c.Created.Value.ToString("yyyy/MM/dd")
+                                                </p>
+                                            </div>
+                                            @if (c.IsImage)
+                                            {
+                                                <div class="card-body">
+                                                    <p class="mb-0">
+                                                        <img src="@c.Text" alt="@c.Text" width="200" height="200"
+                                                             @onclick="@(() => ShowImageDetailDialog(c.Text))" />
+                                                    </p>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="card-body">
+                                                    <p class="mb-0">
+                                                        @c.Text
+                                                    </p>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+
+                                </li>
+                            }
+                        </ul>
+                        <div data-mdb-input-init class="form-outline d-flex align-items-center">
+                            <button type="button" @onclick="ShowUploadImageDialog"
+                                    data-mdb-button-init data-mdb-ripple-init class="btn btn-info btn-rounded float-end">
+                                +
+                            </button>
+                            <textarea class="form-control bg-body-tertiary" id="textAreaExample2" rows="1" @bind="userInput">
+                                    </textarea>
+                            <button type="button" @onclick="SendMessage"
+                                    data-mdb-button-init data-mdb-ripple-init class="btn btn-info btn-rounded float-end">
+                                Send
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <h5 class="font-weight-bold mb-3 text-center text-lg-start">채팅방을 선택해 주세요</h5>
+                    }
+
+
+                </div>
+
+                <!--사이드 리스트(채팅방과 유저 리스트 표시)-->
+                <div class="col-md-6 col-lg-5 col-xl-4 mb-4 mb-md-0">
+                    <!--채팅방 리스트-->
+                    <h5 class="font-weight-bold mb-3 text-center text-lg-start">chat rooms</h5>
+                    <div class="card">
+                        <div class="card-body">
+
+                            <ul class="list-unstyled mb-0">
+                                @if (chatRoomList != null)
+                                {
+                                    @foreach (var chatRoom in chatRoomList)
+                                    {
+                                        @if (!chatRoom.IsDeleted)
+                                        {
+                                            <li class="p-2 border-bottom bg-body-tertiary" @onclick="() => ClickChatRoom(chatRoom)">
+                                                <div class="d-flex flex-row" style="align-items:center;">
+                                                    <div class="pt-1">
+                                                        <p class="fw-bold mb-0"><Icon Name="IconName.ChatLeftDots"></Icon> @chatRoom.Name</p>
+                                                        @* <p class="small text-muted">Hello, Are you there?</p> *@
+                                                    </div>
+                                                </div>
+                                                @* <div class="pt-1">
+                                <p class="small text-muted mb-1">Just now</p>
+                                <span class="badge bg-danger float-end">1</span>
+                                </div> *@
+                                            </li>
+                                        }
+                                    }
+                                }
+                            </ul>
+
+                        </div>
+                    </div>
+                    <br />
+                    <!--튜표 리스트-->
+                    <h5 class="font-weight-bold mb-3 text-center text-lg-start">votes</h5>
+                    <div class="card">
+                        <div class="card-body">
+
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var vot in selectedWorkspace.Vots)
+                                {
+                                    @if (!vot.IsDeleted)
+                                    {
+                                        <li class="p-2 border-bottom bg-body-tertiary" @onclick="(e) => ShowVotDetail(e, vot)">
+                                            <div class="d-flex flex-row">
+                                                <div class="pt-1" style="text-align:center">
+                                                    <p class="fw-bold mb-0"><Icon Name="IconName.Flag"></Icon> @vot.Name</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                }
+
+                            </ul>
+
+                        </div>
+                    </div>
+                    <br />
+                    <!--유저 리스트-->
+                    <h5 class="font-weight-bold mb-3 text-center text-lg-start">users</h5>
+                    <div class="card">
+                        <div class="card-body">
+
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var workspaceUser in selectedWorkspaceUsers)
+                                {
+                                    <li class="p-2 border-bottom bg-body-tertiary">
+                                        <div class="d-flex flex-row">
+                                            <img src="/images/default-user-icon.png" alt="avatar"
+                                                 class="rounded-circle d-flex align-self-center me-3 shadow-1-strong" width="25">
+                                            <div class="pt-1" style="text-align:center">
+                                                <p class="fw-bold mb-0">@workspaceUser.User.UserName</p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+
+                            </ul>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    @if (isShowAddChatRoomDialog)
+    {
+        <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add ChatRoom</h5>
+                    </div>
+                    <div class="modal-body">
+                        <label>이름:</label>
+                        <input type="text" @bind="@newChatRoom.Name" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" @onclick="AddChatRoomDialogButton">Save</button>
+                        <button type="button" class="btn btn-secondary" @onclick="CloseAddChatRoomDialog">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop show"></div>
+    }
+
+    @if (isShowDeleteChatRoomDialog)
+    {
+        <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add ChatRoom</h5>
+                    </div>
+                    <div class="modal-body">
+                        <label>이름:</label>
+                        <ul class="list-unstyled mb-0">
+                            @if (chatRoomList != null)
+                            {
+                                @foreach (var chatRoom in chatRoomList)
+                                {
+                                    @if (!chatRoom.IsDeleted)
+                                    {
+                                        <li class="p-2 border-bottom bg-body-tertiary" @onclick="() => DeleteChatRoom(chatRoom)">
+                                            <div class="d-flex flex-row" style="align-items:center;">
+                                                <div class="pt-1">
+                                                    <p class="fw-bold mb-0"><Icon Name="IconName.ChatLeftDots"></Icon> @chatRoom.Name</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                }
+                            }
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteChatRoomDialog">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop show"></div>
+    }
+
+    @if (isShowUploadImageDialog)
+    {
+        <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Select Image</h5>
+                    </div>
+                    <div class="modal-body">
+                        <label>file:</label><br />
+                        <InputFile OnChange="SelectedImageFile" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseUploadImageDialog">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-backdrop show"></div>
+    }
+
+    @if (isShowImageDetailDialog)
+    {
+        <div class="modal fade show" tabindex="-1" role="dialog" style="display:block; ">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between p-3"
+                     style="min-width:200px; width:auto; padding:0.5rem !important;">
+                    <p class="fw-bold mb-0">Image</p>
+                    <p class="text-muted small mb-0" style="text-align: left; font-size: 12px; align-items: flex-end;">
+                        <i class="far fa-clock">
+                        </i>
+                    </p>
+                </div>
+                <div class="card-body" style=" overflow:auto;">
+                    <p class="mb-0">
+                        <img src="@selectedImageURL" alt="@selectedImageURL" style="max-width:100%; max-height:100%; width:auto; height:auto;" />
+                    </p>
+                </div>
+                <br />
+                <button type="button" class="btn btn-secondary" @onclick="CloseImageDetailDialog">Close</button>
+            </div>
+        </div>
+        <div class="modal-backdrop show"></div>
+    }
+}
+
+@if (isShowAddVotDialog)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Vote</h5>
+                </div>
+                <div class="modal-body">
+                    <label>작업 이름:</label>
+                    <input type="text" @bind="newVotName" />
+                    <br />
+                    <label>설명:</label>
+                    <br />
+                    <textarea @bind="@newVotDetailText" rows="5" cols="35" placeholder="Detail..." style="resize:none;"></textarea>
+                    <br />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" @onclick="UpdateVotButton">Save</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseVotDialogButton">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@if (isShowVotDetail)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vote</h5>
+                </div>
+                <div class="modal-body">
+                    <h3>@selectedVot.Name</h3>
+                    <br />
+                    <label>현황:</label>
+                    <Progress Class="mb-3">
+                        <ProgressBar @ref="agreeProgressBar" Color="ProgressColor.Primary" />
+                        <ProgressBar @ref="undecidedProgressBar" Color="ProgressColor.Secondary" />
+                        <ProgressBar @ref="disagreeProgressBar" Color="ProgressColor.Danger" />
+                    </Progress>
+                    <br />
+                    <div class="blue-square"></div> <div class="inline-text"> 찬성</div>
+                    <div class="red-square"></div> <div class="inline-text"> 반대</div>
+                    <div class="gray-square"></div> <div class="inline-text"> 선택 안함</div>
+                    <br />
+                    <div>@selectedVot.DetailText</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="SetAgreeVotesButton">찬성</button>
+                    <button type="button" class="btn btn-danger" @onclick="SetDisagreeVotesButton">거부</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseVotDetailButton">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    private HubConnection hubConnection; // SignalR 허브 연결용
+    private List<Chat> messages = new List<Chat>();
+    private string userInput;
+
+    private WorkspaceUser workspaceUser = null; // 현재 사용자의 워크스페이스 사용자 정보
+
+    private List<WorkspaceUser> workspaceUserList = new List<WorkspaceUser>();
+    private List<WorkspaceUser> selectedWorkspaceUsers = new List<WorkspaceUser>();
+    private int selectedWorkspaceId = -1;
+    private ChatRoom selectedChatRoom = null;
+
+    private List<ChatRoom> chatRoomList = null;
+    private List<Chat> chats = null;
+
+    private bool isShowAddChatRoomDialog = false;
+    private bool isShowDeleteChatRoomDialog = false;
+    private bool isShowUploadImageDialog = false;
+    private bool isShowImageDetailDialog = false;
+
+    private string selectedImageURL = string.Empty;
+
+    private ChatRoom newChatRoom = new ChatRoom();
+
+    #region 투표 기능 변수들
+    private Workspace selectedWorkspace = null;
+    private bool isShowAddVotDialog = false;
+    private string newVotName = string.Empty;
+    private string newVotDetailText = string.Empty;
+
+    private bool isShowVotDetail = false;
+    private Vot selectedVot = null;
+    private int selectedVotAgreeCount = 0;
+    private int selectedVotDisagreeCount = 0;
+    private int selectedVotUndecidedCount = 0;
+
+    private ProgressBar agreeProgressBar = default!;
+    private ProgressBar disagreeProgressBar = default!;
+    private ProgressBar undecidedProgressBar = default!;
+    #endregion
+
+    AuthenticationState authState;
+    ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // AuthenticationStateProvider.GetAuthenticationStateAsync() 메서드는
+        // 현재 인증 상태를 나타내는 AuthenticationState 객체를 비동기적으로 반환하는 메서드다.
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            // 로그인 안된 경우
+            NavigationManager.NavigateTo("Identity/Account/Login");
+            return;
+        }
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+            .Build();
+
+        // 서버로 부터 받은 메시지 핸들러 등록
+        hubConnection.On<Chat>("ReceiveMessage", async (chatMessage) =>
+        {
+            Debug.WriteLine("Receive Message");
+            messages.Add(chatMessage);
+            messages = (from m in messages orderby m.Created descending select m).ToList<Chat>();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<Chat>("ReceiveImage", async (chatMessage) =>
+        {
+            Debug.WriteLine("Receive Image");
+            messages.Add(chatMessage);
+            messages = (from m in messages orderby m.Created descending select m).ToList<Chat>();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<List<Chat>>("LoadMessages", async (loadedMessages) =>
+        {
+            Debug.WriteLine("Loaded Messages");
+
+            messages.Clear();
+            foreach (var msg in loadedMessages)
+            {
+                Debug.WriteLine(msg.Text);
+                messages.Add(msg);
+            }
+            messages = (from m in messages orderby m.Created descending select m).ToList<Chat>();
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+
+        await LoadWorkspaceUserAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    protected async Task OnWorkspaceChanged(ChangeEventArgs e)
+    {
+        selectedWorkspaceId = int.Parse(e.Value.ToString());
+        selectedWorkspace = await WorkspaceRepository.GetWorkspaceByIdAsync(selectedWorkspaceId);
+        selectedWorkspaceUsers = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceId((int)selectedWorkspaceId);
+
+        await LoadChatServiceAsync();
+    }
+
+    protected async Task LoadWorkspaceUserAsync()
+    {
+        workspaceUserList =
+            await WorkspaceUserRepository.GetWorkspaceUserByUserId(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+        if (workspaceUserList.Count > 0)
+        {
+            selectedWorkspaceId = workspaceUserList[0].WorkspaceId;
+            selectedWorkspace = await WorkspaceRepository.GetWorkspaceByIdAsync(selectedWorkspaceId);
+            selectedWorkspaceUsers = await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceId((int)selectedWorkspaceId);
+        }
+
+        workspaceUser =
+            await WorkspaceUserRepository.GetWorkspaceUserByWorkspaceIdUserId(
+                user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, selectedWorkspaceId);
+
+        await LoadChatServiceAsync();
+    }
+
+    protected async Task LoadChatServiceAsync()
+    {
+        // 선택된 워크스페이스를 사용하는 코드
+        chatRoomList = await ChatRoomRepository.GetChatRoomByWorkspaceId(selectedWorkspaceId);
+        selectedChatRoom = null;
+    }
+
+    #region 챗룸 추가 삭제 함수
+    protected void ShowAddChatRoomDialogButton()
+    {
+        isShowAddChatRoomDialog = true;
+    }
+
+    protected async Task AddChatRoomDialogButton()
+    {
+        if (newChatRoom.Name == null)
+        {
+            newChatRoom.Name = "미정";
+        }
+        newChatRoom.WorkspaceId = selectedWorkspaceId;
+        newChatRoom.IsNotification = false;
+        await ChatRoomRepository.AddChatRoomAsync(newChatRoom);
+
+        newChatRoom = new ChatRoom();
+        isShowAddChatRoomDialog = false;
+
+        await LoadChatServiceAsync();
+    }
+
+    protected void CloseAddChatRoomDialog()
+    {
+        newChatRoom = new ChatRoom();
+        isShowAddChatRoomDialog = false;
+    }
+
+    private async Task ClickChatRoom(ChatRoom cr)
+    {
+        if (selectedChatRoom != null)
+        {
+            await hubConnection.SendAsync("LeaveRoom", selectedChatRoom);
+        }
+        selectedChatRoom = cr;
+        await JoinRoom();
+    }
+
+    private void ShowDeleteChatRoomDialog(MouseEventArgs e)
+    {
+        isShowDeleteChatRoomDialog = true;
+    }
+
+    private void CloseDeleteChatRoomDialog(MouseEventArgs e)
+    {
+        isShowDeleteChatRoomDialog = false;
+    }
+
+    private async Task DeleteChatRoom(ChatRoom cr)
+    {
+        await ChatRoomRepository.DeleteChatRoomById(cr.Id);
+        isShowDeleteChatRoomDialog = false;
+
+        await LoadChatServiceAsync();
+    }
+    #endregion
+
+    #region 투표 함수
+    private void ShowAddVotDialog(MouseEventArgs e)
+    {
+        isShowAddVotDialog = true;
+    }
+
+    private void CloseVotDialogButton(MouseEventArgs e)
+    {
+        newVotName = string.Empty;
+        newVotDetailText = string.Empty;
+        isShowAddVotDialog = false;
+    }
+
+    private async Task UpdateVotButton(MouseEventArgs e)
+    {
+        Vot v = new Vot(newVotName, newVotDetailText, DateTimeOffset.Now, selectedWorkspace);
+        await VotRepository.AddVotAsync(v);
+
+        newVotName = string.Empty;
+        newVotDetailText = string.Empty;
+        isShowAddVotDialog = false;
+    }
+
+    private async Task ShowVotDetail(MouseEventArgs e, Vot v)
+    {
+        isShowVotDetail = true;
+        selectedVot = v;
+
+        await updateVoteProgressBar();
+    }
+
+    private async Task updateVoteProgressBar()
+    {
+        List<Votes> agreeCount = await VotesRepository.GetVotesByVotIdAsync(selectedVot.Id);
+        int AgreeCount = 0;
+        int DisagreeCount = 0;
+        foreach (var vote in agreeCount)
+        {
+            if (vote.VoteType)
+            {
+                AgreeCount++;
+            }
+            else
+            {
+                DisagreeCount++;
+            }
+        }
+
+        selectedVotUndecidedCount = selectedWorkspaceUsers.Count() - AgreeCount - DisagreeCount;
+        selectedVotAgreeCount = AgreeCount;
+        selectedVotDisagreeCount = DisagreeCount;
+
+        agreeProgressBar.Width = (double)selectedVotAgreeCount / selectedWorkspaceUsers.Count() * 100; ;
+        disagreeProgressBar.Width = (double)selectedVotDisagreeCount / selectedWorkspaceUsers.Count() * 100;
+        undecidedProgressBar.Width = (double)selectedVotUndecidedCount / selectedWorkspaceUsers.Count() * 100;
+
+        agreeProgressBar.Label = selectedVotAgreeCount.ToString() + "명";
+        disagreeProgressBar.Label = selectedVotDisagreeCount.ToString() + "명";
+        undecidedProgressBar.Label = selectedVotUndecidedCount.ToString() + "명";
+    }
+
+    private void CloseVotDetailButton(MouseEventArgs e)
+    {
+        isShowVotDetail = false;
+    }
+
+    private async Task SetAgreeVotesButton(MouseEventArgs e)
+    {
+        bool isHaveVot = await VotesRepository.IsUsedByVotIdAndUserId(selectedVot.Id, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+        if (isHaveVot)
+        {
+            await VotesRepository.UpdateVotesTypeByVotIdAndUserId(selectedVot.Id, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, true);
+            await updateVoteProgressBar();
+        }
+        else
+        {
+            await VotesRepository.AddVotesAsync(
+            new Votes(true, DateTimeOffset.Now,
+                await UserRepository.GetUserByIdAsync(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value), selectedVot));
+            await updateVoteProgressBar();
+        }
+    }
+
+    private async Task SetDisagreeVotesButton(MouseEventArgs e)
+    {
+        bool isHaveVot = await VotesRepository.IsUsedByVotIdAndUserId(selectedVot.Id, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+        if (isHaveVot)
+        {
+            await VotesRepository.UpdateVotesTypeByVotIdAndUserId(selectedVot.Id, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, false);
+            await updateVoteProgressBar();
+        }
+        else
+        {
+            await VotesRepository.AddVotesAsync(
+            new Votes(false, DateTimeOffset.Now,
+                await UserRepository.GetUserByIdAsync(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value), selectedVot));
+            await updateVoteProgressBar();
+        }
+    }
+    #endregion
+
+    #region SignalR 함수
+    // 사용법 공부하면서 사용
+    // SendMessage() 대신 아래 함수를 사용!
+    private async Task JoinRoom()
+    {
+        if (hubConnection.State == HubConnectionState.Connected)
+        {
+            Debug.WriteLine(selectedChatRoom.Name);
+            await hubConnection.SendAsync("JoinRoom", selectedChatRoom);
+            Debug.WriteLine("joined room");
+        }
+        else
+        {
+            // 연결이 활성 상태가 아닐 때의 처리
+            // 예를 들어, 연결을 재시도하거나 사용자에게 알림을 표시할 수 있습니다.
+            Debug.WriteLine("connection error");
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (hubConnection.State == HubConnectionState.Connected)
+        {
+            if (!string.IsNullOrEmpty(userInput))
+            {
+                await hubConnection.SendAsync("SendMessageToChatRoom",
+                    selectedChatRoom, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, userInput, false);
+                Debug.WriteLine(messages.Count);
+                userInput = string.Empty;
+            }
+
+        }
+    }
+
+    #endregion
+
+    #region 이미지 업로드 관련 함수
+
+    private void ShowUploadImageDialog(MouseEventArgs e)
+    {
+        isShowUploadImageDialog = true;
+    }
+
+    private void CloseUploadImageDialog(MouseEventArgs e)
+    {
+        isShowUploadImageDialog = false;
+    }
+
+    private async Task SelectedImageFile(InputFileChangeEventArgs e)
+    {
+        var file = e.GetMultipleFiles().FirstOrDefault();
+
+        if (file == null)
+        {
+            Debug.WriteLine("null");
+            return;
+        }
+
+        if (file.ContentType.StartsWith("image/"))
+        {
+            Debug.WriteLine(file.Name);
+            isShowUploadImageDialog = false;
+
+            // 이미지 파일을 서버에 저장
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.Name;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.OpenReadStream().CopyToAsync(fileStream);
+            }
+
+            // 이미지 파일의 URL 생성
+            var imageUrl = $"/images/{uniqueFileName}";
+
+            // 이미지 파일의 URL을 데이터베이스에 저장
+            await hubConnection.SendAsync("SendImageToChatRoom",
+                    selectedChatRoom, user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, imageUrl);
+        }
+        else
+        {
+            Debug.WriteLine("not image file");
+            await JSRuntime.InvokeVoidAsync("alert", "이미지 파일이 아닙니다.");
+        }
+    }
+
+    private void CloseImageDetailDialog(MouseEventArgs e)
+    {
+        isShowImageDetailDialog = false;
+    }
+
+    private void ShowImageDetailDialog(string imageUrl)
+    {
+        isShowImageDetailDialog = true;
+        selectedImageURL = imageUrl;
+    }
+    #endregion
+
+}

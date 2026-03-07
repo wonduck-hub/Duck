@@ -1,0 +1,145 @@
+﻿@page "/Workspaces"
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IWorkspaceRepositoryAsync WorkspaceRepository
+@inject IWorkspaceUserRepository WorkspaceUserRepository
+@inject IChatRoomRepository ChatRoomRepository
+@inject NavigationManager NavigationManager
+
+<h1>Your workspaces</h1>
+<div class="top-row px-4 auth">
+    <button type="button" class="btn btn-primary" @onclick="@ShowDialogButton">Add Workspace</button>
+</div>
+
+<br />
+
+
+<div class="container">
+    @if (workspaces == null)
+    {
+        <div>로딩중...</div>
+    }
+    else if (workspaces.Count == 0)
+    {
+        <div>워크스페이스를 추가해 보세요!</div>
+    }
+    else 
+    {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Project Name</th>
+                <th>Create Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                @foreach (var w in workspaces)
+                {
+                    @if (!w.Workspace.IsDeleted)
+                    {
+                        <tr>
+                            <td><a href="/WorkspaceDetail/@w.Workspace.Id">@w.Workspace.Name</a></td>
+                            <td>@w.Workspace.Created</td>
+                        </tr>
+                    }
+                }
+        
+        </tbody>
+    </table>
+    }
+</div>
+
+<hr />
+
+@if (isShowDialog) {
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add workspace</h5>
+                </div>
+                <div class="modal-body">
+                    Project name:
+                    <input type="text" @bind="@newWorkspace.Name"/>
+                </div>
+                <div class="modal-footer">
+                    <input type="button" class="btn btn-primary" @onclick="SaveWorkspace" value="Add">
+                    <input type="button" class="btn btn-secondary" @onclick="CloseDialogButton" value="Close">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+@code {
+    private ClaimsPrincipal User => (AuthenticationStateProvider.GetAuthenticationStateAsync().Result).User;
+
+    private bool isShowDialog = false;
+
+    private List<WorkspaceUser> workspaces = null;
+
+    private Workspace newWorkspace = new Workspace();
+
+    AuthenticationState authState;
+    ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // AuthenticationStateProvider.GetAuthenticationStateAsync() 메서드는
+        // 현재 인증 상태를 나타내는 AuthenticationState 객체를 비동기적으로 반환하는 메서드다.
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            // 로그인 안된 상태
+            NavigationManager.NavigateTo("Identity/Account/Login");
+        }
+
+        await ReloadWorkspaces();
+    }
+
+    private void ShowDialogButton() {
+        isShowDialog = true;
+    }
+
+    private void CloseDialogButton() {
+        newWorkspace = new Workspace();
+        isShowDialog = false;
+    }
+
+    private async Task ReloadWorkspaces()
+    {
+        // 관계에서 가져옴
+        workspaces = await WorkspaceUserRepository.GetWorkspaceUserByUserId(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+    }
+
+    private async Task SaveWorkspace() {
+        // AuthenticationStateProvider.GetAuthenticationStateAsync() 메서드는 
+        // 현재 인증 상태를 나타내는 AuthenticationState 객체를 비동기적으로 반환하는 메서드다.
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        newWorkspace.Created = DateTimeOffset.Now;
+        // nameidentifier claim을 찾아 그 값을 CreateUserId에 대입하는 코드
+        newWorkspace.CreateUserId = user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+        await WorkspaceRepository.AddWorkspaceAsync(newWorkspace);
+
+        WorkspaceUser newUserWorkspace = new WorkspaceUser(user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value, newWorkspace.Id, true, true);
+
+        await WorkspaceUserRepository.AddWorkspaceUserAsync(newUserWorkspace);
+
+        // 기본 채팅방 생성
+        DateTimeOffset? now = DateTimeOffset.Now;
+        await ChatRoomRepository.AddChatRoomAsync(new ChatRoom(newWorkspace.Id, "Notification", now, true));
+
+        newWorkspace = new Workspace();
+        isShowDialog = false;
+
+        await ReloadWorkspaces();
+
+        // NavigationManager.NavigateTo("/Workspaces", true); // TODO: 다음에 리로딩말고 다시 그리는 방법으로 수정
+    }
+}

@@ -1,0 +1,184 @@
+﻿<Window x:Class="IniMaker.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:IniMaker"
+        mc:Ignorable="d"
+        Title="INI Maker" Height="800" Width="1200"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        >
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!--Menu-->
+        <Menu Grid.Row="0"
+              Grid.ColumnSpan="2"
+              BorderThickness="1"
+              BorderBrush="#e7e6e6">
+            <MenuItem Header="File">
+                <MenuItem Header="Open..." />
+                <MenuItem Header="Save" />
+                <MenuItem Header="Save As..." />
+                <Separator />
+                <MenuItem Header="Exit" />
+            </MenuItem>
+        </Menu>
+
+        <!--Setting-->
+        <Grid Grid.Row="1"
+              Grid.Column="0">
+            <StackPanel Margin="10" CanVerticallyScroll="True">
+                <!--템플릿 선택-->
+                <TextBlock Text="Tamplate:" VerticalAlignment="Center" Margin="5,0,0,5" />
+                <ComboBox Margin="0,0,0,5"
+                          SelectedIndex="0">
+                    <ComboBoxItem Content="Standard" />
+                </ComboBox>
+
+                <!--이름 설정-->
+                <TextBlock Text="INI Name:" VerticalAlignment="Center" Margin="5,0,0,5" />
+                <TextBox Text="{Binding IniName, Mode=TwoWay}"></TextBox>
+
+                <Separator Margin="0, 10, 0, 10"/>
+
+                <!--Max, Min Pressure-->
+                <TextBlock Text="Pressure Range:" 
+                   VerticalAlignment="Center"
+                   Margin="5,0,0,5" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Max:" 
+                   Grid.Column="0"
+                   VerticalAlignment="Center" 
+                   Margin="5,0,0,0" />
+                        <TextBox 
+                            HorizontalAlignment="Left"
+                            Width="120"
+                    Text="{Binding MaxPressure, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnDataErrors=True}"
+                           Grid.Column="1"/>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Min:" 
+   Grid.Column="0"
+   VerticalAlignment="Center" 
+   Margin="5,0,0,0" />
+                    <TextBox 
+                        HorizontalAlignment="Left"
+                        Width="120"
+                        Text="{Binding MinPressure, Mode=TwoWay, UpdateSourceTrigger=LostFocus, ValidatesOnDataErrors=True}"
+                        Grid.Column="1"/>
+                </Grid>
+
+                <Separator Margin="0, 10, 0, 10"/>
+
+                <!--목단부 방향-->
+                <TextBlock Text="Sensor Neck:" 
+                   VerticalAlignment="Center"
+                   Margin="5,0,0,5" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Direction:" 
+                   Grid.Column="0"
+                   VerticalAlignment="Center" 
+                   Margin="5,0,0,0" />
+                    <ComboBox Grid.Column="1" 
+                              HorizontalAlignment="Left"
+                              Width="120"
+                              ItemsSource="{Binding SensorNeckDirections}"
+                              SelectedItem="{Binding SelectedSensorNeckDirection}">
+                    </ComboBox>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Position:" 
+   Grid.Column="0"
+   VerticalAlignment="Center" 
+   Margin="5,0,0,0" />
+                    <ComboBox Grid.Column="1" 
+                        HorizontalAlignment="Left"
+                        Width="120"
+                        ItemsSource="{Binding SensorNeckAlignments}"
+                        SelectedItem="{Binding SelectedSensorNeckAlignment}">
+                    </ComboBox>
+                </Grid>
+
+                <Separator Margin="0, 10, 0, 10"/>
+
+                <!--서브 센서 수-->
+                <TextBlock Text="Subsensor:" 
+                     VerticalAlignment="Center"
+                     Margin="5,0,0,5" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Count:" 
+                               Grid.Column="0"
+                               VerticalAlignment="Center" 
+                               Margin="5,0,0,0" />
+                    <StackPanel Orientation="Horizontal"
+                                Grid.Column="1">
+                        <TextBox 
+                            Text="{Binding SubsensorCount, Mode=TwoWay}"
+                            x:Name="NumberBox" 
+                            Width="70"
+                            HorizontalAlignment="Right"/>
+                        <Button Content="▲" 
+                                HorizontalAlignment="Right"
+                                Command="{Binding IncreaseSubsensorCommand}"/>
+                        <Button Content="▼" 
+                                HorizontalAlignment="Right"
+                                Command="{Binding DecreaseSubsensorCommand}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Separator Margin="0, 10, 0, 10"/>
+
+                <!--order type-->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="Alinment Type:" 
+                               VerticalAlignment="Center" 
+                               Margin="5,0,0,0" />
+                    <CheckBox Content="Vertical" 
+                              HorizontalAlignment="Right"
+                              Grid.Column="1"
+                              IsChecked="{Binding SubsensorAlignmentType}"
+                    />
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
