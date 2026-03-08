@@ -1,0 +1,38 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/FinalProject/">
+    <Project Path="ProjectAssistant/Database/Database.sqlproj" Id="7d400b62-7933-424a-80ae-685f49001280">
+      <Platform Project="AnyCPU" />
+      <Build />
+      <Deploy />
+    </Project>
+    <Project Path="ProjectAssistant/ProjectAssistant1.Models/ProjectAssistant1.Models.csproj" />
+    <Project Path="ProjectAssistant/ProjectAssistant1.Server/ProjectAssistant1.Server.csproj" />
+    <Project Path="ProjectAssistant/ProjectAssistant1/ProjectAssistant1.csproj" />
+    <Project Path="ProjectAssistant/SqlServer/SqlServer.sqlproj" Id="6ecab00a-9763-4031-8f63-cd1217fd2580">
+      <Platform Project="AnyCPU" />
+      <Build />
+      <Deploy />
+    </Project>
+  </Folder>
+  <Folder Name="/SampleProject/">
+    <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
+    <Project Path="SampleProjects/DemoLAB/DemoLAB.csproj">
+      <Deploy />
+    </Project>
+    <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
+    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
+    <Project Path="SampleProjects/ThreadTest/ThreadTest.vcxproj" Id="52cb8e37-2e13-4feb-9f75-093dc6c965a2" />
+    <Project Path="SampleProjects/WormGame/WormGame.vcxproj" Id="5128418d-a92b-4ccc-906f-0e46791903ff" />
+  </Folder>
+  <Folder Name="/SampleProject/LinkedListC/">
+    <File Path="SampleProjects/LinkedListC/linked_list.c" />
+    <File Path="SampleProjects/LinkedListC/linked_list.h" />
+    <File Path="SampleProjects/LinkedListC/main.c" />
+  </Folder>
+  <Project Path="Duck/Duck.csproj" />
+</Solution>
