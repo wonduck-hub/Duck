@@ -19,13 +19,16 @@
       <Deploy />
     </Project>
   </Folder>
+  <Folder Name="/Kitronyx/">
+    <Project Path="kitronyxLogAnalyze/kitronyxLogAnalyze.csproj" Id="5eac52e1-77f6-4823-bc17-af32869ed9fd" />
+    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
+  </Folder>
   <Folder Name="/SampleProject/">
     <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
     <Project Path="SampleProjects/DemoLAB/DemoLAB.csproj">
       <Deploy />
     </Project>
     <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
-    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
     <Project Path="SampleProjects/ThreadTest/ThreadTest.vcxproj" Id="52cb8e37-2e13-4feb-9f75-093dc6c965a2" />
     <Project Path="SampleProjects/WormGame/WormGame.vcxproj" Id="5128418d-a92b-4ccc-906f-0e46791903ff" />
   </Folder>
