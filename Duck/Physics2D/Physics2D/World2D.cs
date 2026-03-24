@@ -8,7 +8,7 @@ namespace DuckPhysics.Physics2D
 {
     public class World2D : IDisposable
     {
-        #region 월드 전역 속성들
+        #region 월드 속성들
         private float mDeltaTime;
         public float DeltaTime
         {
@@ -83,5 +83,19 @@ namespace DuckPhysics.Physics2D
                 obj.Dispose();
             }
         }
+
+        #region Methods
+        public bool TryAddObject(IObject2D obj)
+        {
+            if (obj == null)
+            {
+                return false;
+            }
+            mObjects.Add(obj);
+            return true;
+        }
+
+
+        #endregion
     }
 }
