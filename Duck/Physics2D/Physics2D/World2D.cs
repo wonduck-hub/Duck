@@ -8,20 +8,13 @@ namespace DuckPhysics.Physics2D
 {
     public class World2D : IDisposable
     {
+        #region 상수들
+        float DEFAULT_GRAVITY = 9.8f;
+        #endregion
         #region 월드 속성들
-        private float mDeltaTime;
-        public float DeltaTime
-        {
-            get { return mDeltaTime; }
-            set 
-            { 
-                if (value <= 0)
-                {
-                    value = 0.1f;
-                }
-                mDeltaTime = value; 
-            }
-        }
+        private Stopwatch stopwatch = new Stopwatch();
+        private double lastTime = 0;
+
         private float mGravitiy;
         public float Gravity
         {
@@ -48,6 +41,16 @@ namespace DuckPhysics.Physics2D
             get { return mHeight; }
             set { Height = value; }
         }
+
+        private bool mHasGravity = false;
+        public bool HasGravity
+        {
+            get { return mHasGravity; }
+            set 
+            { 
+                mHasGravity = value; 
+            }
+        }
         #endregion
 
         #region 가지고 있는 개체들(component)
@@ -61,16 +64,14 @@ namespace DuckPhysics.Physics2D
         #region Constructor
         public World2D()
         {
-            DeltaTime = 1;
-            Gravity = 9.8f;
+            Gravity = DEFAULT_GRAVITY;
         }
-        public World2D(float deltaTime,  float gravitiy)
+        public World2D(float gravitiy)
         {
-            DeltaTime = deltaTime;
             Gravity = gravitiy;
         }
-        public World2D (World2D world)
-            : this(world.DeltaTime, world.Gravity)
+        public World2D (World2D world) // 복사생성자
+            : this(world.Gravity)
         {}
 
 
@@ -95,7 +96,36 @@ namespace DuckPhysics.Physics2D
             return true;
         }
 
+        public void Start()
+        {
+            stopwatch.Start();
+            lastTime = stopwatch.Elapsed.TotalSeconds;
+        }
 
+        public void Update()
+        {
+            double currentTime = stopwatch.Elapsed.TotalSeconds;
+            float deltaTime = (float)(currentTime - lastTime);
+
+            foreach (var obj in mObjects)
+            {
+                // 중력
+                if (mHasGravity)
+                {
+                    obj.Velocity += new System.Numerics.Vector2(0, -Gravity) * deltaTime; // 중력 가속도 적용
+                }
+
+                //TODO: 충돌 처리
+
+                //TODO: 월드 경계 처리
+
+                //TODO: 기타 물리 계산
+
+                // 개체 업데이트
+                obj.Update(deltaTime);
+            }
+
+        }
         #endregion
     }
 }
