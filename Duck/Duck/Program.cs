@@ -1,16 +1,21 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Threading;
 using System.Text;
+using System.Threading;
 
 class Server
 {
-    static Queue<byte[]> frameQueue = new Queue<byte[]>();
-    static object queueLock = new object();
-    static bool running = true;
+    const int FrameSize = 18;
+    const int QueueCapacity = 10000;
+
+    static BlockingCollection<byte[]> frameQueue =
+        new BlockingCollection<byte[]>(new ConcurrentQueue<byte[]>(), QueueCapacity);
+
+    static volatile bool running = true;
 
     static void Main()
     {
@@ -21,132 +26,165 @@ class Server
         TcpClient client = listener.AcceptTcpClient();
         Console.WriteLine("Client connected!");
 
+        client.NoDelay = true;
+        client.ReceiveBufferSize = 1024 * 1024;
+        client.SendBufferSize = 1024 * 1024;
+
         NetworkStream stream = client.GetStream();
 
-        // 수신 스레드
         Thread receiveThread = new Thread(() => ReceiveLoop(stream));
-        receiveThread.Start();
+        Thread decodeThread = new Thread(DecodeLoop);
 
-        // 디코딩 스레드
-        Thread decodeThread = new Thread(() => DecodeLoop());
+        receiveThread.Start();
         decodeThread.Start();
 
         Console.WriteLine("Press Enter to stop server...");
         Console.ReadLine();
-        running = false;
 
-        client.Close();
-        listener.Stop();
+        running = false;
+        frameQueue.CompleteAdding();
+
+        try { stream.Close(); } catch { }
+        try { client.Close(); } catch { }
+        try { listener.Stop(); } catch { }
+
+        receiveThread.Join();
+        decodeThread.Join();
     }
 
     static void ReceiveLoop(NetworkStream stream)
     {
-        byte[] buffer = new byte[4096];
-        while (running)
+        byte[] readBuffer = new byte[4096];
+        byte[] assemblyBuffer = new byte[8192];
+        int assemblyCount = 0;
+
+        try
         {
-            try
+            while (running)
             {
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                if (bytesRead == 0) break; // 연결 종료
-
-                byte[] data = new byte[bytesRead];
-                Array.Copy(buffer, data, bytesRead);
-
-                lock (queueLock)
+                int bytesRead = stream.Read(readBuffer, 0, readBuffer.Length);
+                if (bytesRead == 0)
                 {
-                    frameQueue.Enqueue(data);
+                    Console.WriteLine("Client disconnected.");
+                    break;
                 }
+
+                EnsureCapacity(ref assemblyBuffer, assemblyCount + bytesRead);
+                Buffer.BlockCopy(readBuffer, 0, assemblyBuffer, assemblyCount, bytesRead);
+                assemblyCount += bytesRead;
+
+                int offset = 0;
+
+                while (assemblyCount - offset >= FrameSize)
+                {
+                    byte[] frame = new byte[FrameSize];
+                    Buffer.BlockCopy(assemblyBuffer, offset, frame, 0, FrameSize);
+                    offset += FrameSize;
+
+                    // 큐가 꽉 차면 여기서 block
+                    // => 프레임을 버리는 대신 송신 측 흐름을 늦춤
+                    frameQueue.Add(frame);
+                }
+
+                int remaining = assemblyCount - offset;
+                if (remaining > 0)
+                {
+                    Buffer.BlockCopy(assemblyBuffer, offset, assemblyBuffer, 0, remaining);
+                }
+
+                assemblyCount = remaining;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Receive Error: " + ex.Message);
-                break;
-            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Receive Error: " + ex.Message);
+        }
+        finally
+        {
+            frameQueue.CompleteAdding();
         }
     }
 
     static void DecodeLoop()
     {
-        StringBuilder frameCountStringBuilder = new StringBuilder(4096);
-        using StreamWriter frameCountStreamWriter = new StreamWriter(
-            new FileStream(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/server_frame_counts.csv",
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.Read));
-
         Stopwatch sw = Stopwatch.StartNew();
         int packetCount = 0;
-        int expectedSequence = 1; // 송신 측에서 1부터 시작한다고 가정
+        int expectedSequence = 1;
+        long totalMissing = 0;
+        long totalParsed = 0;
+        long totalParseFail = 0;
 
-        while (running)
+        StringBuilder frameCountStringBuilder = new StringBuilder(4096);
+        StreamWriter frameCountStreamWriter = new StreamWriter(new FileStream(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/server_frame_counts.csv", FileMode.Create, FileAccess.Write, FileShare.Read));
+
+        foreach (byte[] frame in frameQueue.GetConsumingEnumerable())
         {
-            byte[] frame = null;
-
-            lock (queueLock)
+            try
             {
-                if (frameQueue.Count > 0)
+                string msg;
+                int seq = SimpleProtocol.ParseFrame(frame, out msg);
+
+                if (seq < 0)
                 {
-                    frame = frameQueue.Dequeue();
+                    totalParseFail++;
+                    Console.WriteLine("Parsing failed!");
+                    continue;
                 }
-            }
 
-            if (frame != null)
-            {
-                try
+                if (seq != expectedSequence)
                 {
-                    string msg;
-                    int frameCount = SimpleProtocol.ParseFrame(frame, out msg);
-
-                    if (frameCount > 0)
+                    if (seq > expectedSequence)
                     {
-                        // 메시지에 시퀀스 번호가 포함되어 있다고 가정
-                        // 예: "SEQ:123|Hello Server!"
-                        if (msg.StartsWith("SEQ:"))
-                        {
-                            int sepIndex = msg.IndexOf('|');
-                            if (sepIndex > 0)
-                            {
-                                string seqStr = msg.Substring(4, sepIndex - 4);
-                                if (int.TryParse(seqStr, out int seq))
-                                {
-                                    if (seq != expectedSequence)
-                                    {
-                                        Console.WriteLine($"누락 발생! 기대한 {expectedSequence}, 받은 {seq}");
-                                        expectedSequence = seq; // 누락된 만큼 건너뛰기
-                                    }
-                                    expectedSequence++;
-                                }
-                            }
-                        }
+                        int missed = seq - expectedSequence;
+                        totalMissing += missed;
+                        Console.WriteLine($"누락 감지: 기대={expectedSequence}, 수신={seq}, 누락={missed}");
                     }
                     else
                     {
-                        Console.WriteLine("Parsing failed!");
+                        Console.WriteLine($"역순/중복/카운터 초기화 의심: 기대={expectedSequence}, 수신={seq}");
                     }
 
-                    ++packetCount;
-                    frameCountStringBuilder.AppendLine(packetCount.ToString());
+                    expectedSequence = seq;
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Decode Error: " + ex.Message);
-                }
+
+                frameCountStringBuilder.AppendLine(((ushort)seq).ToString());
+                expectedSequence++;
+                packetCount++;
+                totalParsed++;
+
+                // 필요하면 메시지 확인
+                // Console.WriteLine($"SEQ={seq}, MSG={msg}");
             }
-            else
+            catch (Exception ex)
             {
-                Thread.Sleep(1); // CPU 점유 줄이기
+                Console.WriteLine("Decode Error: " + ex.Message);
             }
 
-            if (sw.Elapsed.TotalMilliseconds >= 1000)
+            if (sw.ElapsedMilliseconds >= 1000)
             {
-                Console.WriteLine($"Decoded {packetCount} packets in the last second.");
-                packetCount = 0;
+                Console.WriteLine(
+                    $"Decoded={packetCount}/s, Queue={frameQueue.Count}, TotalParsed={totalParsed}, ParseFail={totalParseFail}, Missing={totalMissing}");
                 frameCountStreamWriter.Write(frameCountStringBuilder.ToString());
                 frameCountStreamWriter.Flush();
                 frameCountStringBuilder.Clear();
+                packetCount = 0;
                 sw.Restart();
             }
         }
+    }
+
+    static void EnsureCapacity(ref byte[] buffer, int required)
+    {
+        if (buffer.Length >= required)
+            return;
+
+        int newSize = buffer.Length;
+        while (newSize < required)
+            newSize *= 2;
+
+        Array.Resize(ref buffer, newSize);
     }
 }

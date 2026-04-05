@@ -6,6 +6,7 @@ public class SimpleProtocol
     private const byte HEADER = 0xAA;
     private const byte TAIL = 0x55;
     private static ushort mFrameCounter = 0; // 패킷 횟수 관리
+    public static ushort FrameCounter { get { return mFrameCounter; } }
 
     public static byte[] BuildFrame(string message)
     {

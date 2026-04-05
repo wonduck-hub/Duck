@@ -36,8 +36,8 @@ namespace TcpClientTest
                 byte[] frame1 = SimpleProtocol.BuildFrame(message1);
                 stream.Write(frame1, 0, frame1.Length);
 
+                frameCountStringBuilder.AppendLine(SimpleProtocol.FrameCounter.ToString());
                 ++count;
-                frameCountStringBuilder.AppendLine(count.ToString());
 
                 Delay800Hz();
             }
