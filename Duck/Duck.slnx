@@ -8,7 +8,16 @@
     <Project Path="Communication/Communication.csproj" Id="af112935-9192-4343-900e-453bc0fa4f3c" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
-  <Folder Name="/FinalProject/">
+  <Folder Name="/Kitronyx/">
+    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
+  </Folder>
+  <Folder Name="/SampleProject/">
+    <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
+    <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
+    <Project Path="SampleProjects/ThreadTest/ThreadTest.vcxproj" Id="52cb8e37-2e13-4feb-9f75-093dc6c965a2" />
+    <Project Path="SampleProjects/WormGame/WormGame.vcxproj" Id="5128418d-a92b-4ccc-906f-0e46791903ff" />
+  </Folder>
+  <Folder Name="/SampleProject/FinalProject/">
     <Project Path="ProjectAssistant/Database/Database.sqlproj" Id="7d400b62-7933-424a-80ae-685f49001280">
       <Platform Project="AnyCPU" />
       <Build />
@@ -23,19 +32,13 @@
       <Deploy />
     </Project>
   </Folder>
-  <Folder Name="/Kitronyx/">
-    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
-  </Folder>
-  <Folder Name="/SampleProject/">
-    <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
-    <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
-    <Project Path="SampleProjects/ThreadTest/ThreadTest.vcxproj" Id="52cb8e37-2e13-4feb-9f75-093dc6c965a2" />
-    <Project Path="SampleProjects/WormGame/WormGame.vcxproj" Id="5128418d-a92b-4ccc-906f-0e46791903ff" />
-  </Folder>
   <Folder Name="/SampleProject/LinkedListC/">
     <File Path="SampleProjects/LinkedListC/linked_list.c" />
     <File Path="SampleProjects/LinkedListC/linked_list.h" />
     <File Path="SampleProjects/LinkedListC/main.c" />
   </Folder>
-  <Project Path="Duck/Duck.csproj" />
+  <Folder Name="/TestProject/">
+    <Project Path="Duck/TcpServerTest.csproj" />
+    <Project Path="TcpClientTest/TcpClientTest.csproj" Id="3e1b37ac-8671-4c7f-8b7f-b4b1b779aad6" />
+  </Folder>
 </Solution>

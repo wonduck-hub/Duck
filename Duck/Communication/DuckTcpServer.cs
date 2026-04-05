@@ -4,11 +4,11 @@ using System.Text;
 
 namespace Communication
 {
-    public class TcpServer
+    public class DuckTcpServer
     {
         private TcpListener listener;
 
-        public TcpServer(string ip, int port)
+        public DuckTcpServer(string ip, int port)
         {
             listener = new TcpListener(IPAddress.Parse(ip), port);
         }
