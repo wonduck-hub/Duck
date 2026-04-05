@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/DuckAPI/">
+    <Project Path="Communication/Communication.csproj" Id="af112935-9192-4343-900e-453bc0fa4f3c" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
   <Folder Name="/FinalProject/">
