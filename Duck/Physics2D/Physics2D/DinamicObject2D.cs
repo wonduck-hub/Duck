@@ -15,6 +15,11 @@ namespace DuckPhysics.Physics2D
         public float Scale { get; set; }
         public Collider2D Collider { get; set; }
 
+        // 마찰
+        public float Friction { get; set; } = 0.95f;
+        public float Restitution { get; set; } = 0.8f;
+        public float Mass { get; set; } = 1.0f;
+
         public DinamicObject2D(Vector2 position, Vector2 velocity, Vector2 size, float rotation, EColliderType colliderType = EColliderType.CIRCLE)
         {
             Position = position;
@@ -26,7 +31,6 @@ namespace DuckPhysics.Physics2D
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         public void Update(float deltaTime)

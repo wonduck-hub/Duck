@@ -40,5 +40,6 @@
   <Folder Name="/TestProject/">
     <Project Path="TcpClientTest/TcpClientTest.csproj" Id="3e1b37ac-8671-4c7f-8b7f-b4b1b779aad6" />
     <Project Path="TcpServerTest/TcpServerTest.csproj" />
+    <Project Path="TestPhysics2D/TestPhysics2D.csproj" Id="c2e8f48f-d8eb-4c1f-9bd1-0914354bb6a8" />
   </Folder>
 </Solution>

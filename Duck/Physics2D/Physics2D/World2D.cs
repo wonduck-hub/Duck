@@ -34,13 +34,13 @@ namespace DuckPhysics.Physics2D
         public uint Width
         {
             get { return mWidth; }
-            set { Width = value; }
+            set { mWidth = value; }
         }
         private uint mHeight;
         public uint Height
         {
             get { return mHeight; }
-            set { Height = value; }
+            set { mHeight = value; }
         }
 
         private bool mHasGravity = false;
@@ -52,6 +52,10 @@ namespace DuckPhysics.Physics2D
                 mHasGravity = value;
             }
         }
+
+        // 월드 재질 속성
+        public float WallFriction { get; set; } = 0.95f;      // 벽 마찰 계수
+        public float WallRestitution { get; set; } = 0.8f;   // 벽 반발 계수
         #endregion
 
         #region 가지고 있는 개체들(component)
@@ -103,8 +107,8 @@ namespace DuckPhysics.Physics2D
             stopwatch.Start();
             lastTime = stopwatch.Elapsed.TotalSeconds;
 
-            DinamicObject2D circle0 = new DinamicObject2D(new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(10, 10), 0f, EColliderType.CIRCLE);
-            DinamicObject2D circle1 = new DinamicObject2D(new System.Numerics.Vector2(20, 20), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(10, 10), 0f, EColliderType.CIRCLE);
+            DinamicObject2D circle0 = new DinamicObject2D(new System.Numerics.Vector2(30, 100), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(30, 30), 0f, EColliderType.CIRCLE);
+            DinamicObject2D circle1 = new DinamicObject2D(new System.Numerics.Vector2(35, 200), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(30, 30), 0f, EColliderType.CIRCLE);
 
             TryAddObject(circle0);
             TryAddObject(circle1);
@@ -205,28 +209,63 @@ namespace DuckPhysics.Physics2D
                 if (dyn == null) continue;
 
                 float radius = dyn.Collider.Size.X * 0.5f;
-                float restitution = 0.8f;
 
+                // 벽과 물체의 실제 반발/마찰
+                float restitution = MathF.Min(dyn.Restitution, WallRestitution);
+                float friction = MathF.Sqrt(dyn.Friction * WallFriction);
+
+                // 너무 작은 속도는 떨림 방지용으로 0 처리
+                const float stopThreshold = 0.01f;
+
+                // 좌벽 / 우벽
                 if (dyn.Position.X - radius < 0)
                 {
                     dyn.Position = new Vector2(radius, dyn.Position.Y);
-                    dyn.Velocity = new Vector2(-dyn.Velocity.X * restitution, dyn.Velocity.Y);
+
+                    dyn.Velocity = new Vector2(
+                        -dyn.Velocity.X * restitution, // 법선 반사
+                        dyn.Velocity.Y * friction      // 접선 마찰
+                    );
                 }
                 else if (dyn.Position.X + radius > Width)
                 {
                     dyn.Position = new Vector2(Width - radius, dyn.Position.Y);
-                    dyn.Velocity = new Vector2(-dyn.Velocity.X * restitution, dyn.Velocity.Y);
+
+                    dyn.Velocity = new Vector2(
+                        -dyn.Velocity.X * restitution,
+                        dyn.Velocity.Y * friction
+                    );
                 }
 
+                // 바닥 / 천장
                 if (dyn.Position.Y - radius < 0)
                 {
                     dyn.Position = new Vector2(dyn.Position.X, radius);
-                    dyn.Velocity = new Vector2(dyn.Velocity.X, -dyn.Velocity.Y * restitution);
+
+                    dyn.Velocity = new Vector2(
+                        dyn.Velocity.X * friction,      // 접선 마찰
+                        -dyn.Velocity.Y * restitution   // 법선 반사
+                    );
+
+                    // 바닥에서 미세하게 미끄러지는 현상 완화
+                    if (MathF.Abs(dyn.Velocity.X) < stopThreshold)
+                    {
+                        dyn.Velocity = new Vector2(0f, dyn.Velocity.Y);
+                    }
+
+                    if (MathF.Abs(dyn.Velocity.Y) < stopThreshold)
+                    {
+                        dyn.Velocity = new Vector2(dyn.Velocity.X, 0f);
+                    }
                 }
                 else if (dyn.Position.Y + radius > Height)
                 {
                     dyn.Position = new Vector2(dyn.Position.X, Height - radius);
-                    dyn.Velocity = new Vector2(dyn.Velocity.X, -dyn.Velocity.Y * restitution);
+
+                    dyn.Velocity = new Vector2(
+                        dyn.Velocity.X * friction,
+                        -dyn.Velocity.Y * restitution
+                    );
                 }
             }
         }
