@@ -27,7 +27,7 @@ namespace DuckPhysics.Physics2D
         public int Layer { get; set; } // 충돌 그룹을 나누기 위한 레이어 -> 예: - 예: Player는 Enemy와 충돌하지만, PlayerProjectile은 Player와는 충돌하지 않도록 설정
         #endregion
 
-        public Collider2D(IObject2D owner, EColliderType type, Vector2 offset, int layer)
+        public Collider2D(IObject2D owner, EColliderType type, Vector2 offset, Vector2 size, int layer)
         {
             mOwner = owner;
             Type = type;
@@ -37,6 +37,7 @@ namespace DuckPhysics.Physics2D
             IsStatic = false;
             Layer = layer;
             Points = new List<Vector2>();
+            Size = size;
         }
     }
 }

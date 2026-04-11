@@ -15,13 +15,13 @@ namespace DuckPhysics.Physics2D
         public float Scale { get; set; }
         public Collider2D Collider { get; set; }
 
-        public DinamicObject2D(Vector2 position, Vector2 velocity, float rotation, EColliderType colliderType = EColliderType.CIRCLE)
+        public DinamicObject2D(Vector2 position, Vector2 velocity, Vector2 size, float rotation, EColliderType colliderType = EColliderType.CIRCLE)
         {
             Position = position;
             LastPosition = position;
             Velocity = velocity;
             Rotation = rotation;
-            Collider = new Collider2D(this, colliderType, Vector2.Zero, 0); // 기본 콜라이더 설정 (원형, 오프셋 없음, 레이어 0)
+            Collider = new Collider2D(this, colliderType, Vector2.Zero, size, 0); // 기본 콜라이더 설정 (원형, 오프셋 없음, 레이어 0)
         }
 
         public void Dispose()
@@ -31,9 +31,8 @@ namespace DuckPhysics.Physics2D
 
         public void Update(float deltaTime)
         {
-            Velocity = (Position - LastPosition) / deltaTime;
             LastPosition = Position;
-
+            Position += Velocity * deltaTime;
         }
     }
 }
