@@ -89,7 +89,7 @@ namespace DuckPhysics.Physics2D
                 obj.Dispose();
             }
         }
-
+        
         #region Methods
         public bool TryAddObject(IObject2D obj)
         {
