@@ -2,7 +2,7 @@
 using System.Data;
 using System.Windows;
 
-namespace TestPhysics2D
+namespace WatermelonGame
 {
     /// <summary>
     /// Interaction logic for App.xaml

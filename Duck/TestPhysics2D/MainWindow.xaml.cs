@@ -12,14 +12,14 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace TestPhysics2D
+namespace WatermelonGame
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        private World2D mWorld;
+        private GameWorld2D mWorld;
         private DispatcherTimer mTimer;
 
         // 물리 객체 ↔ UI 매핑
@@ -47,7 +47,7 @@ namespace TestPhysics2D
                 mWorld.Dispose();
             }
 
-            mWorld = new World2D();
+            mWorld = new GameWorld2D();
 
             mWorld.Width = 600;
             mWorld.Height = 400;

@@ -59,7 +59,7 @@ namespace DuckPhysics.Physics2D
         #endregion
 
         #region 가지고 있는 개체들(component)
-        private List<IObject2D> mObjects = new List<IObject2D>(1024);
+        protected List<IObject2D> mObjects = new List<IObject2D>(1024);
         public List<IObject2D> Objects
         {
             get { return mObjects; }
@@ -89,7 +89,7 @@ namespace DuckPhysics.Physics2D
                 obj.Dispose();
             }
         }
-        
+
         #region Methods
         public bool TryAddObject(IObject2D obj)
         {
@@ -101,6 +101,7 @@ namespace DuckPhysics.Physics2D
             mObjects.Add(obj);
             return true;
         }
+        #endregion
 
         public void Start()
         {
@@ -114,7 +115,8 @@ namespace DuckPhysics.Physics2D
             TryAddObject(circle1);
         }
 
-        public void Update()
+        #region 화면 갱신에 따른 업데이트 함수
+        virtual public void Update()
         {
             double currentTime = stopwatch.Elapsed.TotalSeconds;
             float deltaTime = (float)(currentTime - lastTime);
@@ -146,7 +148,7 @@ namespace DuckPhysics.Physics2D
 
         }
 
-        private void HandleCollisions()
+        protected virtual void HandleCollisions()
         {
             for (int i = 0; i < mObjects.Count; i++)
             {
@@ -169,39 +171,45 @@ namespace DuckPhysics.Physics2D
                     float distance = delta.Length();
                     float minDist = radiusA + radiusB;
 
-                    if (distance < minDist && distance > 0.0001f)
-                    {
-                        Vector2 normal = Vector2.Normalize(delta);
-                        float penetration = minDist - distance;
+                    if (distance >= minDist || distance <= 0.0001f)
+                        continue;
 
-                        // 1. 위치 보정
-                        Vector2 correction = normal * (penetration * 0.5f);
-                        a.Position -= correction;
-                        b.Position += correction;
+                    Vector2 normal = Vector2.Normalize(delta);
+                    float penetration = minDist - distance;
 
-                        // 2. 속도 반사/분리
-                        Vector2 relativeVelocity = b.Velocity - a.Velocity;
-                        float velocityAlongNormal = Vector2.Dot(relativeVelocity, normal);
-
-                        // 이미 멀어지는 중이면 무시
-                        if (velocityAlongNormal > 0) // 이게 없으면 계속해서 충돌이 발생할 수 있음
-                            continue;
-
-                        float restitution = 1.0f; // 1.0 = 완전 탄성, 0.0 = 비탄성
-
-                        float impulseScalar = -(1 + restitution) * velocityAlongNormal;
-                        impulseScalar /= 2.0f; // 질량이 둘 다 1이라고 가정
-
-                        Vector2 impulse = impulseScalar * normal;
-
-                        a.Velocity -= impulse;
-                        b.Velocity += impulse;
-                    }
+                    ResolveCollision(a, b, normal, penetration);
                 }
             }
         }
 
-        private void HandleWorldBounds()
+        protected virtual void ResolveCollision(
+    DinamicObject2D a,
+    DinamicObject2D b,
+    Vector2 normal,
+    float penetration)
+        {
+            // 1. 위치 보정
+            Vector2 correction = normal * (penetration * 0.5f);
+            a.Position -= correction;
+            b.Position += correction;
+
+            // 2. 속도 반사/분리
+            Vector2 relativeVelocity = b.Velocity - a.Velocity;
+            float velocityAlongNormal = Vector2.Dot(relativeVelocity, normal);
+
+            if (velocityAlongNormal > 0)
+                return;
+
+            float restitution = 1.0f;
+            float impulseScalar = -(1 + restitution) * velocityAlongNormal;
+            impulseScalar /= 2.0f;
+
+            Vector2 impulse = impulseScalar * normal;
+            a.Velocity -= impulse;
+            b.Velocity += impulse;
+        }
+
+        virtual protected void HandleWorldBounds()
         {
             foreach (var obj in mObjects)
             {
