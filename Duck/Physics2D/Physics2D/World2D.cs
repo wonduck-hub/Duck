@@ -154,16 +154,27 @@ namespace DuckPhysics.Physics2D
             {
                 for (int j = i + 1; j < mObjects.Count; j++)
                 {
-                    var a = mObjects[i] as DinamicObject2D;
-                    var b = mObjects[j] as DinamicObject2D;
+                    DinamicObject2D a;
+                    DinamicObject2D b;
 
-                    if (a == null || b == null)
+                    if (mObjects[i] is  DinamicObject2D)
+                    {
+                        a = (DinamicObject2D)mObjects[i];
+                    }
+                    else
+                    {
                         continue;
-
-                    if (a.Collider.Type != EColliderType.CIRCLE ||
-                        b.Collider.Type != EColliderType.CIRCLE)
+                    }
+                    if (mObjects[j] is DinamicObject2D)
+                    {
+                        b = (DinamicObject2D)mObjects[i];
+                    }
+                    else
+                    {
                         continue;
+                    }
 
+                    // 반지름
                     float radiusA = a.Collider.Size.X * 0.5f;
                     float radiusB = b.Collider.Size.X * 0.5f;
 
@@ -171,7 +182,7 @@ namespace DuckPhysics.Physics2D
                     float distance = delta.Length();
                     float minDist = radiusA + radiusB;
 
-                    if (distance >= minDist || distance <= 0.0001f)
+                    if (distance >= minDist || distance <= 0.0001f) // 충돌 처리를 하지 않는 경우
                         continue;
 
                     Vector2 normal = Vector2.Normalize(delta);
@@ -183,10 +194,10 @@ namespace DuckPhysics.Physics2D
         }
 
         protected virtual void ResolveCollision(
-    DinamicObject2D a,
-    DinamicObject2D b,
-    Vector2 normal,
-    float penetration)
+                                    DinamicObject2D a,
+                                    DinamicObject2D b,
+                                    Vector2 normal,
+                                    float penetration)
         {
             // 1. 위치 보정
             Vector2 correction = normal * (penetration * 0.5f);
