@@ -37,6 +37,9 @@ namespace DuckPhysics.Physics2D
             IsStatic = false;
             Layer = layer;
             Points = new List<Vector2>();
+
+            size.X = Math.Max(size.X, 1);
+            size.Y = Math.Max(size.Y, 1);
             Size = size;
         }
     }
