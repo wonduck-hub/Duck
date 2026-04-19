@@ -19,16 +19,15 @@ namespace WatermelonGame
     /// </summary>
     public partial class MainWindow : Window
     {
+
         private GameWorld2D mWorld;
         private DispatcherTimer mTimer;
 
         // 물리 객체 ↔ UI 매핑
         private Dictionary<DinamicObject2D, Shape> renderObjects = new();
 
-        public MainWindow()
+        private void InitGame()
         {
-            InitializeComponent();
-
             mTimer = new DispatcherTimer();
 
             InitWorld2D();
@@ -55,8 +54,29 @@ namespace WatermelonGame
             mWorld.Gravity = 0.5f;
 
             mWorld.Start();
+
+            mWorld.Objects.Clear();
+            WatermelonObject circle0 = 
+                new WatermelonObject(
+                    new System.Numerics.Vector2(30, 100), 
+                    new System.Numerics.Vector2(0, 0), 
+                    new System.Numerics.Vector2(30, 30), 
+                    0f, 
+                    0, 
+                    EColliderType.CIRCLE);
+            WatermelonObject circle1 = 
+                new WatermelonObject(
+                    new System.Numerics.Vector2(35, 200),
+                    new System.Numerics.Vector2(0, 0),
+                    new System.Numerics.Vector2(30, 30),
+                    0f, 
+                    1, 
+                    EColliderType.CIRCLE);
+            mWorld.TryAddObject(circle0);
+            mWorld.TryAddObject(circle1);
         }
 
+        #region rendering
         private void ShowObjectsInCanvas()
         {
             // add objects in Canvas
@@ -115,15 +135,6 @@ namespace WatermelonGame
                 Canvas.SetTop(shape, y);
             }
         }
-
-        #region UI Event
-        private void ResetButton_Click(object sender, RoutedEventArgs e)
-        {
-            InitWorld2D();
-            ClearCanvas();
-            ShowObjectsInCanvas();
-        }
-
         #endregion
     }
 }

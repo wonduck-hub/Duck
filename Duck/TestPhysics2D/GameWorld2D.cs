@@ -11,28 +11,30 @@ namespace WatermelonGame
     {
         public GameWorld2D() : base(0.5f)
         {
+            HasGravity = true;
         }
 
         protected override void HandleCollisions()
         {
-            for (int i = 0; i < mObjects.Count; i++)
+            for (int targetObjectIndex = 0; targetObjectIndex < mObjects.Count; targetObjectIndex++)
             {
-                for (int j = i + 1; j < mObjects.Count; j++)
+                for (int OtherObjectIndex = targetObjectIndex + 1; OtherObjectIndex < mObjects.Count; OtherObjectIndex++)
                 {
+                    // Watermelone 게임에서는 벽을 제외하면 WatermelonObject만 존재해야 함
                     WatermelonObject a;
                     WatermelonObject b;
 
-                    if (mObjects[i] is WatermelonObject)
+                    if (mObjects[targetObjectIndex] is WatermelonObject)
                     {
-                        a = (WatermelonObject)mObjects[i];
+                        a = (WatermelonObject)mObjects[targetObjectIndex];
                     }
                     else
                     {
                         continue;
                     }
-                    if (mObjects[j] is WatermelonObject)
+                    if (mObjects[OtherObjectIndex] is WatermelonObject)
                     {
-                        b = (WatermelonObject)mObjects[i];
+                        b = (WatermelonObject)mObjects[OtherObjectIndex];
                     }
                     else
                     {
@@ -63,6 +65,11 @@ namespace WatermelonGame
                                     Vector2 normal,
                                     float penetration)
         {
+            if (a.Level != b.Level)
+            {
+                ResolveCollision(a, b, normal, penetration); // 레벨이 같지 않다면 그냥 서로 부딧침
+            }
+
 
         }
     }

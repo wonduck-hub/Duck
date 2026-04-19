@@ -10,11 +10,11 @@ namespace DuckPhysics.Physics2D
     public class World2D : IDisposable
     {
         #region 상수들
-        float DEFAULT_GRAVITY = 9.8f;
+        protected float DEFAULT_GRAVITY = 9.8f;
         #endregion
         #region 월드 속성들
-        private Stopwatch stopwatch = new Stopwatch();
-        private double lastTime = 0;
+        protected Stopwatch stopwatch = new Stopwatch();
+        protected double lastTime = 0;
 
         private float mGravitiy;
         public float Gravity
@@ -107,12 +107,6 @@ namespace DuckPhysics.Physics2D
         {
             stopwatch.Start();
             lastTime = stopwatch.Elapsed.TotalSeconds;
-
-            DinamicObject2D circle0 = new DinamicObject2D(new System.Numerics.Vector2(30, 100), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(30, 30), 0f, EColliderType.CIRCLE);
-            DinamicObject2D circle1 = new DinamicObject2D(new System.Numerics.Vector2(35, 200), new System.Numerics.Vector2(0, 0), new System.Numerics.Vector2(30, 30), 0f, EColliderType.CIRCLE);
-
-            TryAddObject(circle0);
-            TryAddObject(circle1);
         }
 
         #region 화면 갱신에 따른 업데이트 함수
@@ -150,24 +144,24 @@ namespace DuckPhysics.Physics2D
 
         protected virtual void HandleCollisions()
         {
-            for (int i = 0; i < mObjects.Count; i++)
+            for (int targetObjectIndex = 0; targetObjectIndex < mObjects.Count; targetObjectIndex++)
             {
-                for (int j = i + 1; j < mObjects.Count; j++)
+                for (int OtherObjectIndex = targetObjectIndex + 1; OtherObjectIndex < mObjects.Count; OtherObjectIndex++)
                 {
                     DinamicObject2D a;
                     DinamicObject2D b;
 
-                    if (mObjects[i] is  DinamicObject2D)
+                    if (mObjects[targetObjectIndex] is  DinamicObject2D)
                     {
-                        a = (DinamicObject2D)mObjects[i];
+                        a = (DinamicObject2D)mObjects[targetObjectIndex];
                     }
                     else
                     {
                         continue;
                     }
-                    if (mObjects[j] is DinamicObject2D)
+                    if (mObjects[OtherObjectIndex] is DinamicObject2D)
                     {
-                        b = (DinamicObject2D)mObjects[i];
+                        b = (DinamicObject2D)mObjects[OtherObjectIndex];
                     }
                     else
                     {
