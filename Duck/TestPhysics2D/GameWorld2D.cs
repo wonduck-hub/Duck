@@ -71,6 +71,11 @@ namespace WatermelonGame
             }
 
             //TODO: 같은 등금의 과일끼리 충돌 시 합쳐지를 로직 추가
+
+            mObjects.Remove(a);
+            mObjects.Remove(b);
+            WatermelonObject newFruit = new WatermelonObject(a.Position, a.Velocity, a.Collider.Size, a.Rotation, (short)(a.Level + 1));
+            mObjects.Add(newFruit);
         }
     }
 }

@@ -31,7 +31,7 @@ namespace WatermelonGame
             mTimer = new DispatcherTimer();
 
             InitWorld2D();
-            ShowObjectsInCanvas();
+            UpdateCanvasObjects();
 
             // 타이머 (렌더 루프)
             mTimer.Interval = TimeSpan.FromMilliseconds(16);
@@ -77,8 +77,10 @@ namespace WatermelonGame
         }
 
         #region rendering
-        private void ShowObjectsInCanvas()
+        private void UpdateCanvasObjects()
         {
+            ClearCanvas(); 
+
             // add objects in Canvas
             foreach (var obj in mWorld.Objects)
             {
@@ -121,6 +123,8 @@ namespace WatermelonGame
         private void Update(object? sender, EventArgs e)
         {
             mWorld.Update();
+
+            UpdateCanvasObjects(); // 월드 업데이트에 따른 개체 표시 여부를 판단하고 갱신하는 함수
 
             foreach (var pair in renderObjects)
             {

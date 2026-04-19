@@ -29,7 +29,7 @@ namespace WatermelonGame
         {
             InitWorld2D();
             ClearCanvas();
-            ShowObjectsInCanvas();
+            UpdateCanvasObjects();
         }
     }
 }
