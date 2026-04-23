@@ -121,7 +121,7 @@ namespace DuckPhysics.Physics2D
                 foreach (var obj in mObjects)
                 {
 
-                    obj.Velocity += new System.Numerics.Vector2(0, -Gravity) * deltaTime; // 중력 가속도 적용
+                    obj.Velocity += new System.Numerics.Vector2(0, -Gravity); // 중력 가속도 적용
                 }
             }
 
@@ -137,9 +137,7 @@ namespace DuckPhysics.Physics2D
             //TODO: 월드 경계 처리
             HandleWorldBounds();
 
-            //TODO: 기타 물리 계산
-
-
+            lastTime = stopwatch.Elapsed.TotalSeconds;
         }
 
         protected virtual void HandleCollisions()

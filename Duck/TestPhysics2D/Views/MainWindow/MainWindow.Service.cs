@@ -52,7 +52,7 @@ namespace WatermelonGame
             mWorld.Width = 600;
             mWorld.Height = 400;
             mWorld.HasGravity = true;
-            mWorld.Gravity = 0.5f;
+            mWorld.Gravity = 1.0f;
 
             mWorld.Start();
 
