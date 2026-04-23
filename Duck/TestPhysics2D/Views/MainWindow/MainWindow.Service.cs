@@ -56,22 +56,8 @@ namespace WatermelonGame
             mWorld.Start();
 
             mWorld.Objects.Clear();
-            WatermelonObject circle0 = 
-                new WatermelonObject(
-                    new System.Numerics.Vector2(30, 100), 
-                    new System.Numerics.Vector2(0, 0), 
-                    new System.Numerics.Vector2(30, 30), 
-                    0f, 
-                    0, 
-                    EColliderType.CIRCLE);
-            WatermelonObject circle1 = 
-                new WatermelonObject(
-                    new System.Numerics.Vector2(35, 200),
-                    new System.Numerics.Vector2(0, 0),
-                    new System.Numerics.Vector2(30, 30),
-                    0f, 
-                    1, 
-                    EColliderType.CIRCLE);
+            WatermelonObject circle0 = new WatermelonObject(new System.Numerics.Vector2(35, 200), EWatermelonLevel.ZERO);
+            WatermelonObject circle1 = new WatermelonObject(new System.Numerics.Vector2(5, 100), EWatermelonLevel.ZERO);
             mWorld.TryAddObject(circle0);
             mWorld.TryAddObject(circle1);
         }
@@ -79,7 +65,7 @@ namespace WatermelonGame
         #region rendering
         private void UpdateCanvasObjects()
         {
-            ClearCanvas(); 
+            ClearCanvas();
 
             // add objects in Canvas
             foreach (var obj in mWorld.Objects)

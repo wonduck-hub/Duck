@@ -74,8 +74,11 @@ namespace WatermelonGame
 
             mObjects.Remove(a);
             mObjects.Remove(b);
-            WatermelonObject newFruit = new WatermelonObject(a.Position, a.Velocity, a.Collider.Size, a.Rotation, (short)(a.Level + 1));
-            mObjects.Add(newFruit);
+            if (a.Level != EWatermelonLevel.ELEVEN)
+            {
+                WatermelonObject newFruit = new WatermelonObject(a.Position, a.Level + 1);
+                mObjects.Add(newFruit);
+            }
         }
     }
 }
