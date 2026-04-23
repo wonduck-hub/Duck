@@ -18,7 +18,8 @@
 
         <!--WPF Canvas는 게임엔진처럼 매 프레임을 새로 그리는 구조가 아님 내부 개체들을 업데이트 해줘야 하는 방식-->
         <!--WPF는 Retained Mode UI로 변경된 부분만 다시 렌더링 하는 것(성능 효율적)-->
-        <Canvas Grid.Column="0" Grid.Row="0" Background="LightGray" Name="MainCanvas">
+        <Canvas Grid.Column="0" Grid.Row="0" Background="LightGray" x:Name="mainRenderngCanvas"
+                PreviewMouseLeftButtonUp="MainCanvas_PreviewMouseLeftButtonUp">
             
         </Canvas>
 

@@ -31,5 +31,17 @@ namespace WatermelonGame
             ClearCanvas();
             UpdateCanvasObjects();
         }
+
+        private void MainCanvas_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Point pos = e.GetPosition(mainRenderngCanvas);
+
+            float x = (float)pos.X;
+            float y = (float)pos.Y;
+
+            float dropHeight = 500f;
+
+            AddNewFuruit(new System.Numerics.Vector2(x, dropHeight), EWatermelonLevel.ZERO);
+        }
     }
 }

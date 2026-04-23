@@ -1,4 +1,5 @@
 ﻿using DuckPhysics.Physics2D;
+using System.Numerics;
 using System.Text;
 using System.Timers;
 using System.Windows;
@@ -56,10 +57,6 @@ namespace WatermelonGame
             mWorld.Start();
 
             mWorld.Objects.Clear();
-            WatermelonObject circle0 = new WatermelonObject(new System.Numerics.Vector2(35, 200), EWatermelonLevel.ZERO);
-            WatermelonObject circle1 = new WatermelonObject(new System.Numerics.Vector2(5, 100), EWatermelonLevel.ZERO);
-            mWorld.TryAddObject(circle0);
-            mWorld.TryAddObject(circle1);
         }
 
         #region rendering
@@ -93,7 +90,7 @@ namespace WatermelonGame
                         };
                     }
 
-                    MainCanvas.Children.Add(shape);
+                    mainRenderngCanvas.Children.Add(shape);
                     renderObjects[dyn] = shape;
                 }
             }
@@ -101,8 +98,17 @@ namespace WatermelonGame
 
         private void ClearCanvas()
         {
-            MainCanvas.Children.Clear();
+            mainRenderngCanvas.Children.Clear();
             renderObjects.Clear();
+        }
+
+        private bool AddNewFuruit(Vector2 position, EWatermelonLevel level)
+        {
+            if (mWorld.TryAddObject(new WatermelonObject(position, level)))
+            {
+                return true; 
+            }
+            return false;
         }
 
         // Tic Event

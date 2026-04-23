@@ -68,6 +68,7 @@ namespace WatermelonGame
             if (a.Level != b.Level)
             {
                 ResolveCollision(a, b, normal, penetration); // 레벨이 같지 않다면 그냥 서로 부딧침
+                return;
             }
 
             //TODO: 같은 등금의 과일끼리 충돌 시 합쳐지를 로직 추가
