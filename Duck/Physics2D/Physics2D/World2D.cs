@@ -128,7 +128,20 @@ namespace DuckPhysics.Physics2D
             // 개체 업데이트(이동)
             foreach (var obj in mObjects)
             {
-                obj.Update(deltaTime);
+                Vector2 prevPos = obj.Position;
+
+                obj.Update(deltaTime); // 개체 내부에서 개신해야 하는 로직들 업데이트
+
+                if (obj is DinamicObject2D dyn)
+                {
+                    float radius = dyn.Collider.Size.X * 0.5f;
+
+                    if (radius > 0.0001f)
+                    {
+                        Vector2 movement = dyn.Position - prevPos;
+                        dyn.Rotation -= movement.X / radius;
+                    }
+                }
             }
 
             //TODO: 충돌 처리
@@ -277,6 +290,15 @@ namespace DuckPhysics.Physics2D
                         dyn.Velocity.X * friction,
                         -dyn.Velocity.Y * restitution
                     );
+
+                    // 바닥에서 굴러가는 회전 속도
+                    dyn.AngularVelocity = -dyn.Velocity.X / radius;
+
+                    if (MathF.Abs(dyn.Velocity.X) < stopThreshold)
+                        dyn.Velocity = new Vector2(0f, dyn.Velocity.Y);
+
+                    if (MathF.Abs(dyn.Velocity.Y) < stopThreshold)
+                        dyn.Velocity = new Vector2(dyn.Velocity.X, 0f);
                 }
             }
         }

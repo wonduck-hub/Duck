@@ -94,6 +94,20 @@ namespace WatermelonGame
                     renderObjects[dyn] = shape;
                 }
             }
+
+            // 개체들을 렌더링 할 캔버스 좌표에 배치
+            foreach (var pair in renderObjects)
+            {
+                var obj = pair.Key;
+                var shape = pair.Value;
+
+                // 중심 기준 → 좌상단 보정
+                double x = obj.Position.X - shape.Width / 2;
+                double y = (mWorld.Height - obj.Position.Y) - shape.Height / 2;
+
+                Canvas.SetLeft(shape, x);
+                Canvas.SetTop(shape, y);
+            }
         }
 
         private void ClearCanvas()
@@ -118,18 +132,7 @@ namespace WatermelonGame
 
             UpdateCanvasObjects(); // 월드 업데이트에 따른 개체 표시 여부를 판단하고 갱신하는 함수
 
-            foreach (var pair in renderObjects)
-            {
-                var obj = pair.Key;
-                var shape = pair.Value;
-
-                // 중심 기준 → 좌상단 보정
-                double x = obj.Position.X - shape.Width / 2;
-                double y = (mWorld.Height - obj.Position.Y) - shape.Height / 2;
-
-                Canvas.SetLeft(shape, x);
-                Canvas.SetTop(shape, y);
-            }
+            
         }
         #endregion
     }
