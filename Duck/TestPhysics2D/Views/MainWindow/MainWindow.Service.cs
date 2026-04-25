@@ -105,6 +105,10 @@ namespace WatermelonGame
                 double x = obj.Position.X - shape.Width / 2;
                 double y = (mWorld.Height - obj.Position.Y) - shape.Height / 2;
 
+                // 회전 렌더링 적용
+                shape.RenderTransformOrigin = new Point(0.5, 0.5);
+                shape.RenderTransform = new RotateTransform(obj.Rotation * 180.0 / Math.PI);
+
                 Canvas.SetLeft(shape, x);
                 Canvas.SetTop(shape, y);
             }
@@ -120,7 +124,7 @@ namespace WatermelonGame
         {
             if (mWorld.TryAddObject(new WatermelonObject(position, level)))
             {
-                return true; 
+                return true;
             }
             return false;
         }
@@ -132,7 +136,7 @@ namespace WatermelonGame
 
             UpdateCanvasObjects(); // 월드 업데이트에 따른 개체 표시 여부를 판단하고 갱신하는 함수
 
-            
+
         }
         #endregion
     }
