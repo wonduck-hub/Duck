@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WatermelonGame"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" WindowStyle="ToolWindow">
+        Title="MainWindow" Height="600" Width="900
+        " WindowStyle="ToolWindow">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="400" />
@@ -20,13 +21,60 @@
         <!--WPF는 Retained Mode UI로 변경된 부분만 다시 렌더링 하는 것(성능 효율적)-->
         <Canvas Grid.Column="0" Grid.Row="0" Background="LightGray" x:Name="mainRenderngCanvas"
                 PreviewMouseLeftButtonUp="MainCanvas_PreviewMouseLeftButtonUp">
-            
+
         </Canvas>
 
         <Grid Grid.Row="0" Grid.Column="1">
             <StackPanel>
-                <Button Content="Reset" Click="ResetButton_Click" Margin="5"/>
+                <Button Content="Reset"
+                Click="ResetButton_Click"
+                Background="Pink"
+                Margin="5"/>
+                <Separator/>
+
+                <TextBlock Text="Gravity"
+                   Margin="5"/>
+
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="GravityTextBox"
+                 Margin="5"
+                         Height="20"/>
+                    <Button Grid.Column="1"
+                            Content="Apply"
+                            Click="ApplyGravityButton_Click"/>
+
+                </Grid>
+
+                <TextBlock Text="Image Folder Path"
+                   Margin="5"/>
+
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="ImageFolderPathTextBox"
+                     Grid.Column="0"
+                             Height="20"
+                     IsReadOnly="True"/>
+
+                    <Button Grid.Column="1"
+                    Content="Browse"
+                    Margin="5"
+                    Click="BrowseImageFolderButton_Click"/>
+                </Grid>
+                <Separator/>
             </StackPanel>
         </Grid>
+
+        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+
+        </Grid>
+
     </Grid>
 </Window>
