@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WatermelonGame"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="900
-        " WindowStyle="ToolWindow">
+        Title="Watermellon Game!" Height="600" Width="900
+        " WindowStyle="SingleBorderWindow" ResizeMode="CanMinimize">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="400" />
@@ -32,10 +32,14 @@
                 Margin="5"/>
                 <Separator/>
 
+                <!--설정-->
+                <TextBlock Text="Setting"
+                           FontSize="20"
+                           Margin="5"/>
                 <TextBlock Text="Gravity"
                    Margin="5"/>
 
-                <Grid Margin="5">
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -73,7 +77,37 @@
         </Grid>
 
         <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
-
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <TextBlock Text="Level1: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level0TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level2: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level1TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level3: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level2TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level4: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level3TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level5: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level4TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level6: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level5TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level7: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level6TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <TextBlock Text="Level8: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level7TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level9: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level8TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level10: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level9TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level11: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level10TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <TextBlock Text="Level12: " VerticalAlignment="Center"/>
+                    <TextBox x:Name="Level11TextBoxSize" Width="70" Margin="0, 0, 5, 0"/>
+                    <Button Content="레벨 크기 적용" Width="Auto" Margin="20, 0, 20, 0" Click="ApplyWatermellonSize_Click"/>
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
     </Grid>

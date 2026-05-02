@@ -1,5 +1,6 @@
 ﻿using DuckPhysics.Physics2D;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -25,7 +26,7 @@ namespace WatermelonGame
 
         private GameWorld2D mWorld = null;
         private DispatcherTimer mTimer = null;
-        private Dictionary<EWatermelonLevel, ImageBrush> mWatermelonLevelToImage = new();
+        private Dictionary<EWatermelonLevel, LevelVisual?> mWatermelonLevelToVisual = new();
 
         // 물리 객체 ↔ UI 매핑
         private Dictionary<DinamicObject2D, Shape> renderObjects = new();
@@ -41,6 +42,58 @@ namespace WatermelonGame
             mTimer.Interval = TimeSpan.FromMilliseconds(16);
             mTimer.Tick += Update;
             mTimer.Start();
+
+            #region
+            foreach (EWatermelonLevel level in Enum.GetValues(typeof(EWatermelonLevel)))
+            {
+                LevelVisual visual = null;
+                switch (level)
+                {
+                    case EWatermelonLevel.ZERO:
+                        visual = new LevelVisual(null, new Vector2(20, 20));
+                        break;
+                    case EWatermelonLevel.ONE:
+                        visual = new LevelVisual(null, new Vector2(25, 25));
+                        break;
+                    case EWatermelonLevel.TWO:
+                        visual = new LevelVisual(null, new Vector2(30, 30));
+                        break;
+                    case EWatermelonLevel.THREE:
+                        visual = new LevelVisual(null, new Vector2(35, 35));
+                        break;
+                    case EWatermelonLevel.FOUR:
+                        visual = new LevelVisual(null, new Vector2(40, 40));
+                        break;
+                    case EWatermelonLevel.FIVE:
+                        visual = new LevelVisual(null, new Vector2(50, 50));
+                        break;
+                    case EWatermelonLevel.SIX:
+                        visual = new LevelVisual(null, new Vector2(60, 60));
+                        break;
+                    case EWatermelonLevel.SEVEN:
+                        visual = new LevelVisual(null, new Vector2(70, 70));
+                        break;
+                    case EWatermelonLevel.EIGHT:
+                        visual = new LevelVisual(null, new Vector2(80, 80));
+                        break;
+                    case EWatermelonLevel.NINE:
+                        visual = new LevelVisual(null, new Vector2(90, 90));
+                        break;
+                    case EWatermelonLevel.TEN:
+                        visual = new LevelVisual(null, new Vector2(100, 100));
+                        break;
+                    case EWatermelonLevel.ELEVEN:
+                        visual = new LevelVisual(null, new Vector2(120, 120));
+                        break;
+                    default:
+                        Debug.Fail("지원하지 않는 WatermelonLevel 입니다.");
+                        break;
+                }
+                mWatermelonLevelToVisual.Add(level, visual);
+            }
+            #endregion
+
+            Debug.Assert(mWatermelonLevelToVisual.Count == Enum.GetValues(typeof(EWatermelonLevel)).Length, "시작 시 모든 레벨에 대한 이미지가 매핑되어 있어야 합니다.");
         }
 
         private void InitWorld2D()
@@ -82,16 +135,18 @@ namespace WatermelonGame
                             Height = wObj.Collider.Size.Y,
                         };
 
-                        //Debug.Assert(mWatermelonLevelToImage.ContainsKey(wObj.Level), "물체 레벨에 따른 이미지가 매핑되어 있어야 합니다.");
+                        //Debug.Assert(mWatermelonLevelToVisual.ContainsKey(wObj.Level), "물체 레벨에 따른 이미지가 매핑되어 있어야 합니다.");
 
-                        if (mWatermelonLevelToImage.ContainsKey(wObj.Level))
-                        {
-                            shape.Fill = mWatermelonLevelToImage[wObj.Level];
-                        }
-                        else
+                        wObj.Collider.Size = mWatermelonLevelToVisual[wObj.Level]!.Size;
+
+                        if (mWatermelonLevelToVisual[wObj.Level]!.ImgBrushOrNull == null)
                         {
                             Debug.WriteLine("현재 매핑되는 이미지가 없음.");
                             shape.Fill = new SolidColorBrush(Colors.Red);
+                        }
+                        else
+                        {
+                            shape.Fill = mWatermelonLevelToVisual[wObj.Level]!.ImgBrushOrNull;
                         }
                     }
                     else
@@ -116,7 +171,7 @@ namespace WatermelonGame
                 double y = (mWorld.Height - obj.Position.Y) - shape.Height / 2;
 
                 // 회전 렌더링 적용
-                shape.RenderTransformOrigin = new Point(0.5, 0.5);
+                shape.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
                 shape.RenderTransform = new RotateTransform(obj.Rotation * 180.0 / Math.PI);
 
                 Canvas.SetLeft(shape, x);
@@ -164,12 +219,16 @@ namespace WatermelonGame
                                               .Where(f => extensions.Contains(f.Extension.ToLower()))
                                               .ToArray();
 
-            for (int i = 0; i < Enum.GetValues(typeof(EWatermelonLevel)).Length; ++i)
+            for (int levelIndex = 0; levelIndex < Enum.GetValues(typeof(EWatermelonLevel)).Length; ++levelIndex)
             {
+                Debug.Assert(mWatermelonLevelToVisual[(EWatermelonLevel)Enum.GetValues(typeof(EWatermelonLevel)).GetValue(levelIndex)!] != null);
+
+                LevelVisual? currentVisual = mWatermelonLevelToVisual[(EWatermelonLevel)Enum.GetValues(typeof(EWatermelonLevel)).GetValue(levelIndex)!];
                 string? targetImagePathOrNull = null;
+                
                 foreach (FileInfo img in imageFiles)
                 {
-                    if (System.IO.Path.GetFileNameWithoutExtension(img.Name) == (i + 1).ToString())
+                    if (System.IO.Path.GetFileNameWithoutExtension(img.Name) == (levelIndex + 1).ToString())
                     {
                         // 확장자가 이미지인지 확인
                         foreach (string ext in extensions)
@@ -191,7 +250,7 @@ namespace WatermelonGame
                 ImageBrush imgBrush = new ImageBrush();
                 imgBrush.ImageSource = new BitmapImage(new Uri(targetImagePathOrNull, UriKind.Absolute));
 
-                mWatermelonLevelToImage.Add((EWatermelonLevel)Enum.GetValues(typeof(EWatermelonLevel)).GetValue(i), imgBrush);
+                currentVisual.ImgBrushOrNull = imgBrush;
             }
         }
         #endregion
