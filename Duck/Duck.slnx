@@ -11,6 +11,12 @@
   <Folder Name="/Kitronyx/">
     <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
   </Folder>
+  <Folder Name="/Portfolio/">
+    <Project Path="TestPhysics2D/WatermelonGameWindows.csproj" />
+    <Project Path="WatermelonGameMobile/WatermelonGameMobile.csproj" Id="850a4334-822d-4065-aeaf-c0f6b012958e">
+      <Deploy Solution="Debug|Any CPU" />
+    </Project>
+  </Folder>
   <Folder Name="/SampleProject/">
     <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
     <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
@@ -40,6 +46,5 @@
   <Folder Name="/TestProject/">
     <Project Path="TcpClientTest/TcpClientTest.csproj" Id="3e1b37ac-8671-4c7f-8b7f-b4b1b779aad6" />
     <Project Path="TcpServerTest/TcpServerTest.csproj" />
-    <Project Path="TestPhysics2D/WatermelonGame.csproj" Id="c2e8f48f-d8eb-4c1f-9bd1-0914354bb6a8" />
   </Folder>
 </Solution>
