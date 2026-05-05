@@ -199,30 +199,98 @@ namespace DuckPhysics.Physics2D
         }
 
         protected virtual void ResolveCollision(
-                                    DinamicObject2D a,
-                                    DinamicObject2D b,
-                                    Vector2 normal,
-                                    float penetration)
+                    IObject2D currentObject,
+                    IObject2D otherObject,
+                    Vector2 normal,
+                    float penetration)
         {
-            // 1. 위치 보정
-            Vector2 correction = normal * (penetration * 0.5f);
-            a.Position -= correction;
-            b.Position += correction;
+            bool aStatic = currentObject is StaticObject2D;
+            bool bStatic = otherObject is StaticObject2D;
 
-            // 2. 속도 반사/분리
-            Vector2 relativeVelocity = b.Velocity - a.Velocity;
-            float velocityAlongNormal = Vector2.Dot(relativeVelocity, normal);
-
-            if (velocityAlongNormal > 0)
+            if (aStatic && bStatic)
                 return;
 
-            float restitution = 1.0f;
+            DinamicObject2D currentDynamicObject = currentObject as DinamicObject2D;
+            DinamicObject2D otherDynamicObject = otherObject as DinamicObject2D;
+
+            float invMassA = aStatic ? 0f :
+                (currentDynamicObject != null && currentDynamicObject.Mass > 0.0001f ? 1.0f / currentDynamicObject.Mass : 0f);
+
+            float invMassB = bStatic ? 0f :
+                (otherDynamicObject != null && otherDynamicObject.Mass > 0.0001f ? 1.0f / otherDynamicObject.Mass : 0f);
+
+            float invMassSum = invMassA + invMassB;
+
+            if (invMassSum <= 0.0001f)
+                return;
+
+            // 1. 위치 보정 (둘 중 하나면 StaticObject2D인 경우)
+            const float percent = 0.8f;
+            const float slop = 0.01f;
+
+            float correctionMagnitude = MathF.Max(penetration - slop, 0f) * percent;
+
+            if (aStatic)
+            {
+                otherObject.Position += normal * correctionMagnitude;
+            }
+            else if (bStatic)
+            {
+                currentObject.Position -= normal * correctionMagnitude;
+            }
+            else
+            {
+                Vector2 correction = normal * (correctionMagnitude / invMassSum);
+                currentObject.Position -= correction * invMassA;
+                otherObject.Position += correction * invMassB;
+            }
+
+            // 2. 속도 반사/분리 (두 개체가 얼마나 가까워지는지/멀어지는지
+            Vector2 relativeVelocity = otherObject.Velocity - currentObject.Velocity;
+            float velocityAlongNormal = Vector2.Dot(relativeVelocity, normal);
+
+            if (velocityAlongNormal > 0) // 이미 멀어지는 중이라면 튕기지 않음, 그렇지 않으면 둘이 붙어서 계속 덜덜 떨림!!
+                return;
+
+            float restitutionA = currentDynamicObject != null ? currentDynamicObject.Restitution : 0f;
+            float restitutionB = otherDynamicObject != null ? otherDynamicObject.Restitution : 0f;
+            float restitution = MathF.Min(restitutionA, restitutionB);
+
             float impulseScalar = -(1 + restitution) * velocityAlongNormal;
-            impulseScalar /= 2.0f;
+            impulseScalar /= invMassSum;
 
             Vector2 impulse = impulseScalar * normal;
-            a.Velocity -= impulse;
-            b.Velocity += impulse;
+
+            if (!aStatic)
+                currentObject.Velocity -= impulse * invMassA;
+
+            if (!bStatic)
+                otherObject.Velocity += impulse * invMassB;
+
+            // 3. 마찰 처리 (접선 방향 속도 감소)
+            relativeVelocity = otherObject.Velocity - currentObject.Velocity;
+
+            Vector2 tangent = relativeVelocity - Vector2.Dot(relativeVelocity, normal) * normal;
+
+            if (tangent.LengthSquared() <= 0.0001f)
+                return;
+
+            tangent = Vector2.Normalize(tangent);
+
+            float frictionA = currentDynamicObject != null ? currentDynamicObject.Friction : 1.0f;
+            float frictionB = otherDynamicObject != null ? otherDynamicObject.Friction : 1.0f;
+            float friction = MathF.Sqrt(frictionA * frictionB);
+
+            float frictionImpulseScalar = -Vector2.Dot(relativeVelocity, tangent);
+            frictionImpulseScalar /= invMassSum;
+
+            Vector2 frictionImpulse = frictionImpulseScalar * friction * tangent;
+
+            if (!aStatic)
+                currentObject.Velocity -= frictionImpulse * invMassA;
+
+            if (!bStatic)
+                otherObject.Velocity += frictionImpulse * invMassB;
         }
 
         virtual protected void HandleWorldBounds()

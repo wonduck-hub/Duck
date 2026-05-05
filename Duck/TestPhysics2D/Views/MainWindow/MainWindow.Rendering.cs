@@ -29,7 +29,7 @@ namespace WatermelonGame
         private Dictionary<EWatermelonLevel, LevelVisual?> mWatermelonLevelToVisual = new();
 
         // 물리 객체 ↔ UI 매핑
-        private Dictionary<DinamicObject2D, Shape> renderObjects = new();
+        private Dictionary<IObject2D, Shape> renderObjects = new();
 
         private void InitGame()
         {
@@ -110,9 +110,17 @@ namespace WatermelonGame
             mWorld.HasGravity = true;
             mWorld.Gravity = 9.8f;
 
+            mWorld.Objects.Clear();
             mWorld.Start();
 
-            mWorld.Objects.Clear();
+            // 정적 개체 추가
+            StaticObject2D leftWall = new StaticObject2D(new Vector2(10, 10), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
+            StaticObject2D rightWall = new StaticObject2D(new Vector2(500, 10), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
+            StaticObject2D bottomWall = new StaticObject2D(new Vector2(100, 10), new Vector2(100, 10), 0f, EColliderType.RECTANGLE);
+
+            mWorld.TryAddObject(leftWall);
+            mWorld.TryAddObject(rightWall);
+            mWorld.TryAddObject(bottomWall);
         }
 
         #region rendering
@@ -151,12 +159,42 @@ namespace WatermelonGame
                     }
                     else
                     {
-                        Debug.Fail("현재는 Circle 타입의 2D 객체만 렌더링이 구현되어 있습니다.");
+                        Debug.Fail("현재 Watermelon은 Circle 타입의 2D 객체만 렌더링이 구현되어 있습니다.");
                         shape = null;
                     }
 
                     mainRenderngCanvas.Children.Add(shape);
                     renderObjects[wObj] = shape;
+                }
+                else if (obj is StaticObject2D)
+                {
+                    StaticObject2D sObj = (StaticObject2D)obj;
+                    Shape shape;
+
+                    if (sObj.Collider.Type == EColliderType.RECTANGLE)
+                    {
+                        shape = new System.Windows.Shapes.Rectangle()
+                        {
+                            Width = sObj.Collider.Size.X,
+                            Height = sObj.Collider.Size.Y,
+                        };
+
+                        shape.Fill = new SolidColorBrush(Colors.Blue);
+                        mainRenderngCanvas.Children.Add(shape);
+                        renderObjects[sObj] = shape;
+                    }
+                    else if (sObj.Collider.Type == EColliderType.CIRCLE)
+                    {
+                        shape = new Ellipse()
+                        {
+                            Width = sObj.Collider.Size.X,
+                            Height = sObj.Collider.Size.Y,
+                        };
+
+                        shape.Fill = new SolidColorBrush(Colors.Blue);
+                        mainRenderngCanvas.Children.Add(shape);
+                        renderObjects[sObj] = shape;
+                    }
                 }
             }
 
@@ -225,7 +263,7 @@ namespace WatermelonGame
 
                 LevelVisual? currentVisual = mWatermelonLevelToVisual[(EWatermelonLevel)Enum.GetValues(typeof(EWatermelonLevel)).GetValue(levelIndex)!];
                 string? targetImagePathOrNull = null;
-                
+
                 foreach (FileInfo img in imageFiles)
                 {
                     if (System.IO.Path.GetFileNameWithoutExtension(img.Name) == (levelIndex + 1).ToString())

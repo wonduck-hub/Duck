@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 
@@ -16,68 +17,57 @@ namespace WatermelonGame
 
         protected override void HandleCollisions()
         {
-            for (int targetObjectIndex = 0; targetObjectIndex < mObjects.Count; targetObjectIndex++)
+            for (int currentObjectIndex = 0; currentObjectIndex < mObjects.Count; currentObjectIndex++)
             {
-                for (int OtherObjectIndex = targetObjectIndex + 1; OtherObjectIndex < mObjects.Count; OtherObjectIndex++)
+                for (int otherObjectIndex = currentObjectIndex + 1; otherObjectIndex < mObjects.Count; otherObjectIndex++)
                 {
                     // Watermelone 게임에서는 벽을 제외하면 WatermelonObject만 존재해야 함
-                    Watermelon a;
-                    Watermelon b;
+                    IObject2D currentObject;
+                    IObject2D otherObject;
 
-                    if (mObjects[targetObjectIndex] is Watermelon)
+                    currentObject = mObjects[currentObjectIndex];
+                    otherObject = mObjects[otherObjectIndex];
+
+                    CollisionInfo collisionInfo = Collider2D.GetCollisionInfo(currentObject, otherObject);
+
+                    if (!collisionInfo.IsColliding)
                     {
-                        a = (Watermelon)mObjects[targetObjectIndex];
+                        continue;
+                    }
+
+                    if (currentObject is Watermelon && otherObject is Watermelon)
+                    {
+                        ResolveWatermelonObjectCollision((Watermelon)currentObject, (Watermelon)otherObject, collisionInfo.Normal, collisionInfo.Penetration);
                     }
                     else
                     {
-                        continue;
-                    }
-                    if (mObjects[OtherObjectIndex] is Watermelon)
-                    {
-                        b = (Watermelon)mObjects[OtherObjectIndex];
-                    }
-                    else
-                    {
-                        continue;
+                        ResolveCollision(currentObject, otherObject, collisionInfo.Normal, collisionInfo.Penetration);
                     }
 
-                    // 반지름
-                    float radiusA = a.Collider.Size.X * 0.5f;
-                    float radiusB = b.Collider.Size.X * 0.5f;
-
-                    Vector2 delta = b.Position - a.Position;
-                    float distance = delta.Length();
-                    float minDist = radiusA + radiusB;
-
-                    if (distance >= minDist || distance <= 0.0001f) // 충돌 처리를 하지 않는 경우
-                        continue;
-
-                    Vector2 normal = Vector2.Normalize(delta);
-                    float penetration = minDist - distance;
-
-                    ResolveWatermelonObjectCollision(a, b, normal, penetration);
+                    Debug.WriteLine($"current: {currentObject.GetType().FullName}, index: {currentObjectIndex}");
+                    Debug.WriteLine($"other: {otherObject.GetType().FullName}, index: {otherObjectIndex}");
                 }
             }
         }
 
-        private void ResolveWatermelonObjectCollision(Watermelon a,
-                                    Watermelon b,
+        private void ResolveWatermelonObjectCollision(Watermelon currentObject,
+                                    Watermelon otherObject,
                                     Vector2 normal,
                                     float penetration)
         {
-            if (a.Level != b.Level)
+            if (currentObject.Level != otherObject.Level)
             {
-                ResolveCollision(a, b, normal, penetration); // 레벨이 같지 않다면 그냥 서로 부딧침
+                ResolveCollision(currentObject, otherObject, normal, penetration); // 레벨이 같지 않다면 그냥 서로 부딧침
                 return;
             }
 
             //TODO: 같은 등금의 과일끼리 충돌 시 합쳐지를 로직 추가
 
-            mObjects.Remove(a);
-            mObjects.Remove(b);
-            if (a.Level != EWatermelonLevel.ELEVEN)
+            mObjects.Remove(currentObject);
+            mObjects.Remove(otherObject);
+            if (currentObject.Level != EWatermelonLevel.ELEVEN)
             {
-                Watermelon newFruit = new Watermelon(a.Position, a.Level + 1);
+                Watermelon newFruit = new Watermelon(currentObject.Position, currentObject.Level + 1);
                 mObjects.Add(newFruit);
             }
         }

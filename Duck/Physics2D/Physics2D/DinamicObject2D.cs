@@ -8,15 +8,15 @@ namespace DuckPhysics.Physics2D
     public class DinamicObject2D : IObject2D
     {
         public Vector2 Position { get; set; }
-        public Vector2 LastPosition { get; set; }
+        private Vector2 LastPosition { get; set; }
         public Vector2 Velocity { get; set; }
         public float Rotation { get; set; }
         public float AngularVelocity { get; set; }
-        public float Scale { get; set; }
+        public float Scale { get; set; } = 1;
         public Collider2D Collider { get; set; }
 
         // 마찰
-        public float Friction { get; set; } = 0.95f;    // 마찰
+        public float Friction { get; set; } = 1f;    // 마찰
         public float Restitution { get; set; } = 0.8f;  // 반발 계수
         public float Mass { get; set; } = 1.0f;         // 질량
 

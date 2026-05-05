@@ -13,6 +13,12 @@ namespace DuckPhysics.Physics2D
         public float Rotation { get; set; }
         public float AngularVelocity { get; set; }
         public float Scale { get; set; }
+        public Collider2D Collider { get; set; }
+
+        // 마찰
+        public float Friction { get; set; }    // 마찰
+        public float Restitution { get; set; } // 반발 계수
+        public float Mass { get; set; }        // 질량
 
         public void Update(float deltaTime);
     }
