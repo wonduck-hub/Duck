@@ -123,7 +123,7 @@ namespace WatermelonGame
             // add objects in Canvas
             foreach (var obj in mWorld.Objects)
             {
-                if (obj is WatermelonObject wObj)
+                if (obj is Watermelon wObj)
                 {
                     Shape shape;
 
@@ -187,7 +187,7 @@ namespace WatermelonGame
 
         private bool AddNewFuruit(Vector2 position, EWatermelonLevel level)
         {
-            if (mWorld.TryAddObject(new WatermelonObject(position, level)))
+            if (mWorld.TryAddObject(new Watermelon(position, level)))
             {
                 return true;
             }

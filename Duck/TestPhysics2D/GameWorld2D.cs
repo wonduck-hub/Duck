@@ -21,20 +21,20 @@ namespace WatermelonGame
                 for (int OtherObjectIndex = targetObjectIndex + 1; OtherObjectIndex < mObjects.Count; OtherObjectIndex++)
                 {
                     // Watermelone 게임에서는 벽을 제외하면 WatermelonObject만 존재해야 함
-                    WatermelonObject a;
-                    WatermelonObject b;
+                    Watermelon a;
+                    Watermelon b;
 
-                    if (mObjects[targetObjectIndex] is WatermelonObject)
+                    if (mObjects[targetObjectIndex] is Watermelon)
                     {
-                        a = (WatermelonObject)mObjects[targetObjectIndex];
+                        a = (Watermelon)mObjects[targetObjectIndex];
                     }
                     else
                     {
                         continue;
                     }
-                    if (mObjects[OtherObjectIndex] is WatermelonObject)
+                    if (mObjects[OtherObjectIndex] is Watermelon)
                     {
-                        b = (WatermelonObject)mObjects[OtherObjectIndex];
+                        b = (Watermelon)mObjects[OtherObjectIndex];
                     }
                     else
                     {
@@ -60,8 +60,8 @@ namespace WatermelonGame
             }
         }
 
-        private void ResolveWatermelonObjectCollision(WatermelonObject a,
-                                    WatermelonObject b,
+        private void ResolveWatermelonObjectCollision(Watermelon a,
+                                    Watermelon b,
                                     Vector2 normal,
                                     float penetration)
         {
@@ -77,7 +77,7 @@ namespace WatermelonGame
             mObjects.Remove(b);
             if (a.Level != EWatermelonLevel.ELEVEN)
             {
-                WatermelonObject newFruit = new WatermelonObject(a.Position, a.Level + 1);
+                Watermelon newFruit = new Watermelon(a.Position, a.Level + 1);
                 mObjects.Add(newFruit);
             }
         }
