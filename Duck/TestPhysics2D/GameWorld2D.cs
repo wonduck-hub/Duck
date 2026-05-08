@@ -13,6 +13,9 @@ namespace WatermelonGame
         public GameWorld2D() : base(0.5f)
         {
             HasGravity = true;
+
+            WallRestitution = 0.1f; // 수박 게임에서 벽과의 충돌 시 튕겨나가지 않음
+            WallFriction = 0f; // 수박 게임에서는 벽과의 마찰이 없음
         }
 
         protected override void HandleCollisions()

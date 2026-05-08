@@ -51,11 +51,13 @@ namespace WatermelonGame
         public Watermelon(Vector2 position, EWatermelonLevel level)
             : base(position, new Vector2(0, 0), new Vector2(0, 0), 0, EColliderType.CIRCLE)
         {
-            Restitution = 0.1f; // 수박 게임에서 과일끼리 튕겨나가지 않음
             mLevel = level;
 
             Vector2 size = new Vector2(1, 1);
             Collider = new Collider2D(this, EColliderType.CIRCLE, new Vector2(0, 0), size, 0);
+
+            Restitution = 0.1f; // 수박 게임에서 과일끼리 튕겨나가지 않음
+            Friction = 0f; // 수박 게임에서는 마찰이 없음
         }
     }
 }
