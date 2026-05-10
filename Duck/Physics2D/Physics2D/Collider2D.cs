@@ -160,6 +160,8 @@ namespace DuckPhysics.Physics2D
 
             Vector2 localNormal;
 
+            float penetration;
+
             if (distance <= 0.0001f)
             {
                 Vector2 distancesToEdges = new Vector2(
@@ -169,21 +171,36 @@ namespace DuckPhysics.Physics2D
 
                 if (distancesToEdges.X < distancesToEdges.Y)
                 {
-                    localNormal = new Vector2(MathF.Sign(localCirclePos.X), 0f);
+                    if (localCirclePos.X >= 0)
+                    {
+                        localNormal = new Vector2(-1f, 0f);
+                    }
+                    else
+                    {
+                        localNormal = new Vector2(1f, 0f);
+                    }
                     distance = distancesToEdges.X;
                 }
                 else
                 {
-                    localNormal = new Vector2(0f, MathF.Sign(localCirclePos.Y));
+                    if (localCirclePos.Y >= 0)
+                    {
+                        localNormal = new Vector2(0f, -1f);
+                    }
+                    else
+                    {
+                        localNormal = new Vector2(0f, 1f);
+                    }
                     distance = distancesToEdges.Y;
                 }
+
+                penetration = radius + distance;
             }
             else
             {
-                localNormal = diff / distance;
+                localNormal = -(diff / distance);
+                penetration = radius - distance;
             }
-
-            float penetration = radius - distance;
 
             float cosBack = MathF.Cos(rectObj.Rotation);
             float sinBack = MathF.Sin(rectObj.Rotation);
