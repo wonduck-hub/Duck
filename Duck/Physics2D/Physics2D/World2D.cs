@@ -54,7 +54,7 @@ namespace DuckPhysics.Physics2D
         }
 
         // 월드 재질 속성
-        public float WallFriction { get; set; } = 0.95f;      // 벽 마찰 계수
+        public float WallFriction { get; set; } = 0.7f;      // 벽 마찰 계수
         public float WallRestitution { get; set; } = 0.8f;   // 벽 반발 계수
         #endregion
 
@@ -121,7 +121,7 @@ namespace DuckPhysics.Physics2D
                 foreach (var obj in mObjects)
                 {
 
-                    obj.Velocity += new System.Numerics.Vector2(0, -Gravity); // 중력 가속도 적용
+                    obj.Velocity += new System.Numerics.Vector2(0, -Gravity) * deltaTime; // 중력 가속도 적용
                 }
             }
 
@@ -201,17 +201,21 @@ namespace DuckPhysics.Physics2D
         protected virtual void ResolveCollision(
                     IObject2D currentObject,
                     IObject2D otherObject,
-                    Vector2 normal,
+                    Vector2 normal, // currentObject에서 otherObject로 향하는 단위 벡터
                     float penetration)
         {
+            #region 선조건
             bool aStatic = currentObject is StaticObject2D;
             bool bStatic = otherObject is StaticObject2D;
 
             if (aStatic && bStatic)
                 return;
 
-            DinamicObject2D currentDynamicObject = currentObject as DinamicObject2D;
-            DinamicObject2D otherDynamicObject = otherObject as DinamicObject2D;
+            DinamicObject2D? currentDynamicObject = currentObject as DinamicObject2D;
+            DinamicObject2D? otherDynamicObject = otherObject as DinamicObject2D;
+
+            Debug.Assert(currentDynamicObject != null || aStatic);
+            Debug.Assert(otherDynamicObject != null || aStatic);
 
             float invMassA = aStatic ? 0f :
                 (currentDynamicObject != null && currentDynamicObject.Mass > 0.0001f ? 1.0f / currentDynamicObject.Mass : 0f);
@@ -223,10 +227,13 @@ namespace DuckPhysics.Physics2D
 
             if (invMassSum <= 0.0001f)
                 return;
+            #endregion
 
-            // 1. 위치 보정 (둘 중 하나면 StaticObject2D인 경우)
-            const float percent = 0.8f;
-            const float slop = 0.01f;
+            #region 위치 보정 (둘 중 하나면 StaticObject2D인 경우)
+
+            // 충돌 후 얼마나 보정할지 정하는 값
+            const float percent = 1.0f;
+            const float slop = 0.1f;
 
             float correctionMagnitude = MathF.Max(penetration - slop, 0f) * percent;
 
@@ -238,14 +245,36 @@ namespace DuckPhysics.Physics2D
             {
                 currentObject.Position -= normal * correctionMagnitude;
             }
-            else
+            else // 둘 다 동적 객체인 경우, 질량에 비례해서 보정
             {
                 Vector2 correction = normal * (correctionMagnitude / invMassSum);
                 currentObject.Position -= correction * invMassA;
                 otherObject.Position += correction * invMassB;
             }
 
-            // 2. 속도 반사/분리 (두 개체가 얼마나 가까워지는지/멀어지는지
+            // 정적 개체 안으로 계속 들어가는 현상 방지: 정적 개체로 향하는 속도를 0으로 보정
+            // 예: 정적 계체 위에 올라간 동적 계체가 중력으로 계속 정적 계체 안으로 들어가는 경우, 정적 계체에 대한 속도 보정을 통해 이를 방지
+            if (bStatic)
+            {
+                float velocityIntoStatic = Vector2.Dot(currentObject.Velocity, normal);
+
+                if (velocityIntoStatic > 0f)
+                {
+                    currentObject.Velocity -= normal * velocityIntoStatic;
+                }
+            }
+            else if (aStatic)
+            {
+                float velocityIntoStatic = Vector2.Dot(otherObject.Velocity, -normal);
+
+                if (velocityIntoStatic > 0f)
+                {
+                    otherObject.Velocity += normal * velocityIntoStatic;
+                }
+            }
+            #endregion
+
+            #region 속도 반사/분리 (두 개체가 얼마나 가까워지는지/멀어지는지
             Vector2 relativeVelocity = otherObject.Velocity - currentObject.Velocity;
             float velocityAlongNormal = Vector2.Dot(relativeVelocity, normal);
 
@@ -267,7 +296,9 @@ namespace DuckPhysics.Physics2D
             if (!bStatic)
                 otherObject.Velocity += impulse * invMassB;
 
-            // 3. 마찰 처리 (접선 방향 속도 감소)
+            #endregion
+
+            #region 마찰 처리 (접선 방향 속도 감소)
             relativeVelocity = otherObject.Velocity - currentObject.Velocity;
 
             Vector2 tangent = relativeVelocity - Vector2.Dot(relativeVelocity, normal) * normal;
@@ -291,6 +322,8 @@ namespace DuckPhysics.Physics2D
 
             if (!bStatic)
                 otherObject.Velocity += frictionImpulse * invMassB;
+
+            #endregion
         }
 
         virtual protected void HandleWorldBounds()

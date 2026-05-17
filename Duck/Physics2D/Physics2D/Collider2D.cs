@@ -19,9 +19,9 @@ namespace DuckPhysics.Physics2D
 
         public CollisionInfo(bool isColliding, Vector2 normal, float penetration)
         {
-            IsColliding = isColliding;
-            Normal = normal;
-            Penetration = penetration;
+            IsColliding = isColliding;      // 충돌 여부
+            Normal = normal;                // currentObject에서 otherObject로 향하는 단위 벡터
+            Penetration = penetration;      // 겹침 깊이
         }
 
         public static CollisionInfo NoCollision()
@@ -162,36 +162,75 @@ namespace DuckPhysics.Physics2D
 
             float penetration;
 
-            if (distance <= 0.0001f)
+            if (distance <= 0.0001f) // 원 중심이 사각형 안에 있는 경우
             {
                 Vector2 distancesToEdges = new Vector2(
                     half.X - MathF.Abs(localCirclePos.X),
                     half.Y - MathF.Abs(localCirclePos.Y)
                 );
 
-                if (distancesToEdges.X < distancesToEdges.Y)
+                Vector2 localVelocity = new Vector2(
+                    circleObj.Velocity.X * cos - circleObj.Velocity.Y * sin,
+                    circleObj.Velocity.X * sin + circleObj.Velocity.Y * cos
+                );
+
+                if (localVelocity.LengthSquared() > 0.0001f)
                 {
-                    if (localCirclePos.X >= 0)
+                    if (MathF.Abs(localVelocity.X) > MathF.Abs(localVelocity.Y))
                     {
-                        localNormal = new Vector2(-1f, 0f);
+                        if (localVelocity.X >= 0)
+                        {
+                            localNormal = new Vector2(1f, 0f);
+                        }
+                        else
+                        {
+                            localNormal = new Vector2(-1f, 0f);
+                        }
+
+                        distance = distancesToEdges.X;
                     }
                     else
                     {
-                        localNormal = new Vector2(1f, 0f);
+                        if (localVelocity.Y >= 0)
+                        {
+                            localNormal = new Vector2(0f, 1f);
+                        }
+                        else
+                        {
+                            localNormal = new Vector2(0f, -1f);
+                        }
+
+                        distance = distancesToEdges.Y;
                     }
-                    distance = distancesToEdges.X;
                 }
                 else
                 {
-                    if (localCirclePos.Y >= 0)
+                    if (distancesToEdges.X < distancesToEdges.Y)
                     {
-                        localNormal = new Vector2(0f, -1f);
+                        if (localCirclePos.X >= 0)
+                        {
+                            localNormal = new Vector2(-1f, 0f);
+                        }
+                        else
+                        {
+                            localNormal = new Vector2(1f, 0f);
+                        }
+
+                        distance = distancesToEdges.X;
                     }
                     else
                     {
-                        localNormal = new Vector2(0f, 1f);
+                        if (localCirclePos.Y >= 0)
+                        {
+                            localNormal = new Vector2(0f, -1f);
+                        }
+                        else
+                        {
+                            localNormal = new Vector2(0f, 1f);
+                        }
+
+                        distance = distancesToEdges.Y;
                     }
-                    distance = distancesToEdges.Y;
                 }
 
                 penetration = radius + distance;

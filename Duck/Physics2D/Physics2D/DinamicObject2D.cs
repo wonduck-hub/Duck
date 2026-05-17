@@ -16,7 +16,7 @@ namespace DuckPhysics.Physics2D
         public Collider2D Collider { get; set; }
 
         // 마찰
-        public float Friction { get; set; } = 1f;    // 마찰
+        public float Friction { get; set; } = 0.9f;    // 마찰
         public float Restitution { get; set; } = 0.8f;  // 반발 계수
         public float Mass { get; set; } = 1.0f;         // 질량
 

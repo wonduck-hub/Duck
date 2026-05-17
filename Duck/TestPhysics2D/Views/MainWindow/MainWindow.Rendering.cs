@@ -114,9 +114,9 @@ namespace WatermelonGame
             mWorld.Start();
 
             // 정적 개체 추가
-            StaticObject2D leftWall = new StaticObject2D(new Vector2(10, 10), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
-            StaticObject2D rightWall = new StaticObject2D(new Vector2(500, 10), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
-            StaticObject2D bottomWall = new StaticObject2D(new Vector2(100, 10), new Vector2(100, 10), 0f, EColliderType.RECTANGLE);
+            StaticObject2D leftWall = new StaticObject2D(new Vector2(10, 100), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
+            StaticObject2D rightWall = new StaticObject2D(new Vector2(500, 100), new Vector2(100, 100), 0f, EColliderType.RECTANGLE);
+            StaticObject2D bottomWall = new StaticObject2D(new Vector2(100, 100), new Vector2(100, 10), 0f, EColliderType.RECTANGLE);
 
             mWorld.TryAddObject(leftWall);
             mWorld.TryAddObject(rightWall);
