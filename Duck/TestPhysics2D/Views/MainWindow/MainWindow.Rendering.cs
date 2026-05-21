@@ -113,14 +113,56 @@ namespace WatermelonGame
             mWorld.Objects.Clear();
             mWorld.Start();
 
-            // 정적 개체 추가
-            StaticObject2D leftWall = new StaticObject2D(new Vector2(10, 100), new Vector2(10, 200), 0f, EColliderType.RECTANGLE);
-            StaticObject2D rightWall = new StaticObject2D(new Vector2(500, 100), new Vector2(100, 100), 0f, EColliderType.RECTANGLE);
-            StaticObject2D bottomWall = new StaticObject2D(new Vector2(100, 100), new Vector2(100, 10), 0f, EColliderType.RECTANGLE);
+            Basket basket = new Basket(
+                new Vector2(200, 200),
+                new Vector2(100, 200),
+                10f);
 
-            mWorld.TryAddObject(leftWall);
-            mWorld.TryAddObject(rightWall);
-            mWorld.TryAddObject(bottomWall);
+            foreach (StaticObject2D wall in basket.Walls)
+            {
+                mWorld.TryAddObject(wall);
+            }
+        }
+
+        public class Basket // 바구니 용 중첩 클래스, 월드에 추가되는 정적 개체들을 묶어서 관리하기 위한 용도
+        {
+            public StaticObject2D LeftWall { get; private set; }
+            public StaticObject2D RightWall { get; private set; }
+            public StaticObject2D BottomWall { get; private set; }
+
+            public IEnumerable<StaticObject2D> Walls
+            {
+                get
+                {
+                    yield return LeftWall;
+                    yield return RightWall;
+                    yield return BottomWall;
+                }
+            }
+
+            public Basket(Vector2 center, Vector2 size, float wallThickness)
+            {
+                float halfWidth = size.X / 2f;
+                float halfHeight = size.Y / 2f;
+
+                LeftWall = new StaticObject2D(
+                    new Vector2(center.X - halfWidth, center.Y),
+                    new Vector2(wallThickness, size.Y),
+                    0f,
+                    EColliderType.RECTANGLE);
+
+                RightWall = new StaticObject2D(
+                    new Vector2(center.X + halfWidth, center.Y),
+                    new Vector2(wallThickness, size.Y),
+                    0f,
+                    EColliderType.RECTANGLE);
+
+                BottomWall = new StaticObject2D(
+                    new Vector2(center.X, center.Y - halfHeight),
+                    new Vector2(size.X + wallThickness, wallThickness),
+                    0f,
+                    EColliderType.RECTANGLE);
+            }
         }
 
         #region rendering
