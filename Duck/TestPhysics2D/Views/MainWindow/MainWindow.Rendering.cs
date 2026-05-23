@@ -280,8 +280,6 @@ namespace WatermelonGame
             mWorld.Update();
 
             UpdateCanvasObjects(); // 월드 업데이트에 따른 개체 표시 여부를 판단하고 갱신하는 함수
-
-
         }
 
         private void SetWatermellonImage(string imageFolderpath)

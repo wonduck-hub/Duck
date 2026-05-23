@@ -46,9 +46,6 @@ namespace WatermelonGame
                     {
                         ResolveCollision(currentObject, otherObject, collisionInfo.Normal, collisionInfo.Penetration);
                     }
-
-                    Debug.WriteLine($"current: {currentObject.GetType().FullName}, index: {currentObjectIndex}");
-                    Debug.WriteLine($"other: {otherObject.GetType().FullName}, index: {otherObjectIndex}");
                 }
             }
         }
