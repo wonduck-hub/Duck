@@ -6,7 +6,7 @@
   </Configurations>
   <Folder Name="/DuckAPI/">
     <Project Path="Communication/Communication.csproj" Id="af112935-9192-4343-900e-453bc0fa4f3c" />
-    <Project Path="DDirect3D11/DDirect3D11.csproj" Id="a9551bc9-f371-4a85-98aa-c82f2826038e" />
+    <Project Path="DMedia/DMedia.csproj" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
   <Folder Name="/Kitronyx/">
