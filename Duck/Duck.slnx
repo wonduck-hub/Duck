@@ -4,28 +4,28 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/DuckAPI/">
+  <Folder Name="/00_StudyProject/">
+    <Project Path="CPlusPlus/CPlusPlus.vcxproj" Id="7cc18d2d-afe8-4da0-8532-8fb5ef3af06b" />
+  </Folder>
+  <Folder Name="/01_DuckAPI/">
     <Project Path="Communication/Communication.csproj" Id="af112935-9192-4343-900e-453bc0fa4f3c" />
     <Project Path="DAI/DAI.csproj" Id="b748c210-d69f-4cf3-9c4b-b5ca194c4ae2" />
     <Project Path="DMedia/DMedia.csproj" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
-  <Folder Name="/Kitronyx/">
-    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
-  </Folder>
-  <Folder Name="/Portfolio/">
+  <Folder Name="/02_Portfolio/">
     <Project Path="TestPhysics2D/WatermelonGameWindows.csproj" />
     <Project Path="WatermelonGameMobile/WatermelonGameMobile.csproj" Id="850a4334-822d-4065-aeaf-c0f6b012958e">
       <Deploy Solution="Debug|Any CPU" />
     </Project>
   </Folder>
-  <Folder Name="/SampleProject/">
+  <Folder Name="/03_ShcoolProject/">
     <Project Path="SampleProjects/AutoDuck/AutoDuck.csproj" />
     <Project Path="SampleProjects/ExcelManager/Duck.OfficeAutomationModule.csproj" />
     <Project Path="SampleProjects/ThreadTest/ThreadTest.vcxproj" Id="52cb8e37-2e13-4feb-9f75-093dc6c965a2" />
     <Project Path="SampleProjects/WormGame/WormGame.vcxproj" Id="5128418d-a92b-4ccc-906f-0e46791903ff" />
   </Folder>
-  <Folder Name="/SampleProject/FinalProject/">
+  <Folder Name="/03_ShcoolProject/FinalProject/">
     <Project Path="ProjectAssistant/Database/Database.sqlproj" Id="7d400b62-7933-424a-80ae-685f49001280">
       <Platform Project="AnyCPU" />
       <Build />
@@ -40,12 +40,15 @@
       <Deploy />
     </Project>
   </Folder>
-  <Folder Name="/SampleProject/LinkedListC/">
+  <Folder Name="/03_ShcoolProject/LinkedListC/">
     <File Path="SampleProjects/LinkedListC/linked_list.c" />
     <File Path="SampleProjects/LinkedListC/linked_list.h" />
     <File Path="SampleProjects/LinkedListC/main.c" />
   </Folder>
-  <Folder Name="/TestProject/">
+  <Folder Name="/04_CompanyProject/">
+    <Project Path="SampleProjects/IniMaker/IniMaker.csproj" />
+  </Folder>
+  <Folder Name="/05_TestProject/">
     <Project Path="TcpClientTest/TcpClientTest.csproj" Id="3e1b37ac-8671-4c7f-8b7f-b4b1b779aad6" />
     <Project Path="TcpServerTest/TcpServerTest.csproj" />
   </Folder>
