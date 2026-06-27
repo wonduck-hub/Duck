@@ -18,12 +18,21 @@
     <ClCompile Include="CPlusPlus.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="StringSample.cpp">
+    <ClCompile Include="IOSample.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ReferenceSampel.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ReferenceSample.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="StringSample.h">
+    <ClInclude Include="IOSample.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferenceSample.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
