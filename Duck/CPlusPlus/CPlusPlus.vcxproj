@@ -201,6 +201,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CPlusPlus.cpp" />
+    <ClCompile Include="DFileIO.h" />
     <ClCompile Include="IOSample.cpp" />
     <ClCompile Include="ReferenceSampel.cpp" />
     <ClCompile Include="ReferenceSample.cpp" />

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "OnnxStudio (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "OnnxStudio (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
