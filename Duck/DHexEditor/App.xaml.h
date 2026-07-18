@@ -2,7 +2,7 @@
 
 #include "App.xaml.g.h"
 
-namespace winrt::TestWinUI::implementation
+namespace winrt::DHexEditor::implementation
 {
     struct App : AppT<App>
     {

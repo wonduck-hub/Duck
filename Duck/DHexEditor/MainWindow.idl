@@ -1,4 +1,4 @@
-namespace TestWinUI
+namespace DHexEditor
 {
     [default_interface]
     runtimeclass MainWindow : Microsoft.UI.Xaml.Window

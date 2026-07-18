@@ -2,7 +2,7 @@
 
 #include "MainWindow.g.h"
 
-namespace winrt::TestWinUI::implementation
+namespace winrt::DHexEditor::implementation
 {
     struct MainWindow : MainWindowT<MainWindow>
     {
@@ -14,10 +14,11 @@ namespace winrt::TestWinUI::implementation
 
         int32_t MyProperty();
         void MyProperty(int32_t value);
+        void ShowAbout_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
     };
 }
 
-namespace winrt::TestWinUI::factory_implementation
+namespace winrt::DHexEditor::factory_implementation
 {
     struct MainWindow : MainWindowT<MainWindow, implementation::MainWindow>
     {
