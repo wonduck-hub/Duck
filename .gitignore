@@ -62,3 +62,7 @@ Duck/.vs
 
 # Locally restored NuGet packages
 Duck/packages/Microsoft.*/
+
+
+# SQLiteBrowser
+Duck/SQLiteBrowser/SQLiteBrowser (Package)/

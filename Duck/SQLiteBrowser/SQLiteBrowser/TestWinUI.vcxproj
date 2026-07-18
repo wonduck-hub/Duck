@@ -19,7 +19,7 @@
     <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
     <MinimalCoreWin>true</MinimalCoreWin>
     <ProjectGuid>{b825535b-60ab-4c45-bead-51f5a8de6134}</ProjectGuid>
-    <ProjectName>TestWinUI</ProjectName>
+    <ProjectName>SQLiteBrowser</ProjectName>
     <RootNamespace>TestWinUI</RootNamespace>
     <!--
       $(TargetName) should be same as $(RootNamespace) so that the produced binaries (.exe/.pri/etc.)
