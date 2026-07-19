@@ -14,7 +14,14 @@ namespace winrt::DHexEditor::implementation
 
         int32_t MyProperty();
         void MyProperty(int32_t value);
-        void ShowAbout_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
+
+        void ShowAbout_Click(
+            winrt::Windows::Foundation::IInspectable const&, winrt::Microsoft::UI::Xaml::RoutedEventArgs const&);
+        winrt::fire_and_forget OpenFile_Click(
+            winrt::Windows::Foundation::IInspectable const&, winrt::Microsoft::UI::Xaml::RoutedEventArgs const&);
+
+    private:
+        DHexDocument* mHexDocument;
     };
 }
 

@@ -18,9 +18,6 @@
     <Project Path="DHexEditor/DHexEditor.vcxproj" Id="1e53969f-c709-477b-938f-7f068fc83bc2">
       <Deploy />
     </Project>
-    <Project Path="SQLiteBrowser/SQLiteBrowser.vcxproj" Id="d8ef6d72-cf49-4097-8df0-ca2ef2b5e76a">
-      <Deploy />
-    </Project>
     <Project Path="TestPhysics2D/WatermelonGameWindows.csproj" />
     <Project Path="WatermelonGameMobile/WatermelonGameMobile.csproj" Id="850a4334-822d-4065-aeaf-c0f6b012958e">
       <Deploy Solution="Debug|Any CPU" />

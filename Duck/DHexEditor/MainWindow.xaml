@@ -16,12 +16,7 @@
 
         <MenuBar Grid.Row="0">
             <MenuBarItem Title="File">
-                <MenuFlyoutItem Text="New">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="N"/>
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="Open...">
+                <MenuFlyoutItem Text="Open..." Click="OpenFile_Click">
                     <MenuFlyoutItem.KeyboardAccelerators>
                         <KeyboardAccelerator Modifiers="Control" Key="O"/>
                     </MenuFlyoutItem.KeyboardAccelerators>

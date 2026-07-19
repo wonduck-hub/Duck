@@ -23,3 +23,10 @@
 #include <winrt/Microsoft.UI.Xaml.Shapes.h>
 #include <winrt/Microsoft.UI.Dispatching.h>
 #include <wil/cppwinrt_helpers.h>
+#include <winrt/Microsoft.Windows.Storage.Pickers.h>
+#include <winrt/Microsoft.UI.Windowing.h>
+
+#include <fstream>
+#include <filesystem>
+
+#include "DHexDocument.h"

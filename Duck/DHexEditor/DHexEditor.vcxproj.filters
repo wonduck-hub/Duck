@@ -12,9 +12,21 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="DBinaryReader.cpp">
+      <Filter>BinaryIO</Filter>
+    </ClCompile>
+    <ClCompile Include="DHexDocument.cpp">
+      <Filter>BinaryIO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="DBinaryReader.h">
+      <Filter>BinaryIO</Filter>
+    </ClInclude>
+    <ClInclude Include="DHexDocument.h">
+      <Filter>BinaryIO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -42,6 +54,12 @@
   <ItemGroup>
     <Filter Include="Assets">
       <UniqueIdentifier>{1e53969f-c709-477b-938f-7f068fc83bc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TextRenderer">
+      <UniqueIdentifier>{fa80ab5a-6422-4db3-974d-8db89e41ff22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BinaryIO">
+      <UniqueIdentifier>{8c8422e7-15b7-4c3c-bde6-d095c98787a6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
