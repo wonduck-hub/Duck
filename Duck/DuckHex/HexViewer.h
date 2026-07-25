@@ -1,4 +1,6 @@
 #pragma once
+
+#include "BinaryDocument.h"
 #include "pch.h"
 
 namespace DuckHex
@@ -25,5 +27,6 @@ namespace DuckHex
 		uint64_t GetBytePerLine() const;
 		uint64_t GetTotalLines() const;
 		uint64_t GetDocumentSize() const;
+		void Render();
 	};
 }

@@ -202,6 +202,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BinaryDocument.h" />
+    <ClInclude Include="HexViewer.h" />
     <ClInclude Include="Imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="Imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="Imgui\imconfig.h" />
@@ -214,6 +215,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BinaryDocument.cpp" />
+    <ClCompile Include="HexViewer.cpp" />
     <ClCompile Include="Imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="Imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="Imgui\imgui.cpp" />

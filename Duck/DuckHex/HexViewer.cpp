@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "HexViewer.h"
 
 DuckHex::HexViewer::HexViewer()
 	: mDocument(nullptr), mCurrentSeekPosition(0),

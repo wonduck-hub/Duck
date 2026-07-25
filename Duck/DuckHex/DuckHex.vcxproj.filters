@@ -54,6 +54,9 @@
     <ClInclude Include="pch.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="HexViewer.h">
+      <Filter>HexEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -81,6 +84,9 @@
       <Filter>Imgui\backends</Filter>
     </ClCompile>
     <ClCompile Include="BinaryDocument.cpp">
+      <Filter>HexEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="HexViewer.cpp">
       <Filter>HexEditor</Filter>
     </ClCompile>
   </ItemGroup>
