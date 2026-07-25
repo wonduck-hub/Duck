@@ -60,10 +60,5 @@
   <Folder Name="/05_TestProject/">
     <Project Path="TcpClientTest/TcpClientTest.csproj" Id="3e1b37ac-8671-4c7f-8b7f-b4b1b779aad6" />
     <Project Path="TcpServerTest/TcpServerTest.csproj" />
-    <Project Path="TestWinUI/TestWinUI (Package)/TestWinUI (Package).wapproj" Type="c7167f0d-bc9f-4e6e-afe1-012c56b48db5" Id="3cd8f297-84a4-42f8-800a-4439932675a2">
-      <Platform Solution="*|Any CPU" Project="x64" />
-      <Deploy />
-    </Project>
-    <Project Path="TestWinUI/TestWinUI/TestWinUI.vcxproj" Id="b825535b-60ab-4c45-bead-51f5a8de6134" />
   </Folder>
 </Solution>

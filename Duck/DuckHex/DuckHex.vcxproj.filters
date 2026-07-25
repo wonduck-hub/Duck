@@ -19,6 +19,9 @@
     <Filter Include="Imgui\backends">
       <UniqueIdentifier>{cfecf8ca-d7c3-4f44-a078-f032405788d2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HexEditor">
+      <UniqueIdentifier>{0b5a3099-3ba2-4837-9569-7074cef6e863}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Imgui\imconfig.h">
@@ -45,6 +48,12 @@
     <ClInclude Include="Imgui\backends\imgui_impl_win32.h">
       <Filter>Imgui\backends</Filter>
     </ClInclude>
+    <ClInclude Include="BinaryDocument.h">
+      <Filter>HexEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -70,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="Imgui\backends\imgui_impl_win32.cpp">
       <Filter>Imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="BinaryDocument.cpp">
+      <Filter>HexEditor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
