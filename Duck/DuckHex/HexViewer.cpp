@@ -20,7 +20,7 @@ DuckHex::HexViewer::~HexViewer()
 
 bool DuckHex::HexViewer::LoadDocument(BinaryDocument* document)
 {
-	assert(document != nullptr, "Document is null. Please provide a valid BinaryDocument.");
+	assert(document != nullptr && "Document is null. Please provide a valid BinaryDocument.");
 
 	if (mDocument != nullptr)
 	{
@@ -41,8 +41,8 @@ void DuckHex::HexViewer::UnloadDocument()
 
 bool DuckHex::HexViewer::SetCurrentSeekPosition(uint64_t position)
 {
-	assert(mDocument != nullptr, "Document is not loaded. Please load a document first.");
-	assert(position < mDocument->GetSize(), "Seek position is out of bounds. Please provide a valid position.");
+	assert(mDocument != nullptr && "Document is not loaded. Please load a document first.");
+	assert(position < mDocument->GetSize() && "Seek position is out of bounds. Please provide a valid position.");
 
 	mCurrentSeekPosition = position;
 	return true;
@@ -50,7 +50,7 @@ bool DuckHex::HexViewer::SetCurrentSeekPosition(uint64_t position)
 
 void DuckHex::HexViewer::SetViewPortSize(float bytesPerLine, float totalLines)
 {
-	assert(bytesPerLine > 0 && totalLines > 0, "Bytes per line and total lines must be greater than zero.");
+	assert(bytesPerLine > 0 && totalLines > 0 && "Bytes per line and total lines must be greater than zero.");
 
 	mViewPortWidth = bytesPerLine;
 	mViewPortHeight = totalLines;
@@ -75,7 +75,7 @@ uint64_t DuckHex::HexViewer::GetTotalLines() const
 
 uint64_t DuckHex::HexViewer::GetDocumentSize() const
 {
-	assert(mDocument != nullptr, "Document is not loaded. Please load a document first.");
+	assert(mDocument != nullptr && "Document is not loaded. Please load a document first.");
 	return mDocument->GetSize();
 }
 

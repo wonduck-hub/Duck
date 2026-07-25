@@ -66,3 +66,6 @@ Duck/packages/Microsoft.*/
 
 # SQLiteBrowser
 Duck/SQLiteBrowser/SQLiteBrowser (Package)/
+
+Duck/CppWinUiTest/CppWinUiTest/
+Duck/CppWinUiTest/CppWinUiTest (Package)/

@@ -30,7 +30,7 @@ bool DuckHex::BinaryDocument::LoadFromFile(const filesystem::path& filePath)
 
 	mFileStream.seekg(currentPosition);
 
-	assert(endPosition >= 0, "Failed to determine file size. The end position is negative.");
+	assert(endPosition >= 0 && "Failed to determine file size. The end position is negative.");
 	mFileSize = static_cast<std::uint64_t>(endPosition);
 
 	return true;
@@ -46,10 +46,10 @@ void DuckHex::BinaryDocument::Unload()
 	mDataByOffset = vector<uint8_t>(4096);
 }
 
-const vector<uint8_t>& DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size) const
+const vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size) const
 {
-	assert(mFileStream.is_open(), "File stream is not open. Please load a file first.");
-	assert(seekPosition < GetSize(), "Seek position is out of bounds. Please provide a valid position.");
+	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
+	assert(seekPosition < GetSize() && "Seek position is out of bounds. Please provide a valid position.");
 
 	// TODO: 여기에 return 문을 삽입합니다.
 	vector<uint8_t> result = vector<uint8_t>(4096, 0);
@@ -59,7 +59,7 @@ const vector<uint8_t>& DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(cons
 
 uint64_t DuckHex::BinaryDocument::GetSize() const
 {
-	assert(mFileStream.is_open(), "File stream is not open. Please load a file first.");
+	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
 
 	return mFileSize;
 }
