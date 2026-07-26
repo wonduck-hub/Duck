@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "BinaryDocument.h"
 
 DuckHex::BinaryDocument::BinaryDocument()
@@ -9,18 +10,18 @@ DuckHex::BinaryDocument::~BinaryDocument()
 	Unload();
 }
 
-bool DuckHex::BinaryDocument::LoadFromFile(const filesystem::path& filePath)
+bool DuckHex::BinaryDocument::LoadFile(const filesystem::path& filePath)
 {
+	if (mFileStream.is_open())
+	{
+		Unload();
+	}
+
 	mFileStream.open(filePath, ios::out | ios::in | ios::binary);
 	if (!mFileStream.is_open())
 	{
 		cerr << "Failed to open file: " << filePath << endl;
 		return false;
-	}
-
-	if (mFileStream.is_open())
-	{
-		Unload();
 	}
 
 	const std::streampos currentPosition = mFileStream.tellg();
@@ -30,7 +31,7 @@ bool DuckHex::BinaryDocument::LoadFromFile(const filesystem::path& filePath)
 
 	mFileStream.seekg(currentPosition);
 
-	assert(endPosition >= 0 && "Failed to determine file size. The end position is negative.");
+	assert(endPosition != std::streampos(-1) && "Failed to determine file size.");
 	mFileSize = static_cast<std::uint64_t>(endPosition);
 
 	return true;
@@ -46,13 +47,34 @@ void DuckHex::BinaryDocument::Unload()
 	mDataByOffset = vector<uint8_t>(4096);
 }
 
-const vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size) const
+vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size)
 {
 	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
 	assert(seekPosition < GetSize() && "Seek position is out of bounds. Please provide a valid position.");
 
-	// TODO: 여기에 return 문을 삽입합니다.
-	vector<uint8_t> result = vector<uint8_t>(4096, 0);
+	const uint64_t fileSize = GetSize();
+
+	if (seekPosition >= fileSize)
+		return {};
+
+	// 파일 끝을 넘어가지 않도록 조정
+	const uint64_t readSize =
+		std::min(size, fileSize - seekPosition);
+
+	std::vector<uint8_t> result(
+		static_cast<size_t>(readSize));
+
+	mFileStream.seekg(
+		static_cast<std::streamoff>(seekPosition),
+		std::ios::beg);
+
+	mFileStream.read(
+		reinterpret_cast<char*>(result.data()),
+		static_cast<std::streamsize>(readSize));
+
+	// 실제 읽은 크기로 조정
+	result.resize(
+		static_cast<size_t>(mFileStream.gcount()));
 
 	return result;
 }

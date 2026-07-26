@@ -16,9 +16,9 @@ namespace DuckHex
 	public:
 		BinaryDocument();
 		~BinaryDocument();
-		bool LoadFromFile(const filesystem::path& filePath);
+		bool LoadFile(const filesystem::path& filePath);
 		void Unload();
-		const vector<uint8_t> GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size) const;
+		vector<uint8_t> GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size);
 		uint64_t GetSize() const;
 	};
 }
