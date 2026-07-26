@@ -23,22 +23,8 @@ namespace DuckHex
 		static const uint32_t DEFAULT_BYTES_PER_LINE = 16;
 		static const uint32_t DEFAULT_FONT_SIZE = 10;
 
-		HWND mWindowHandle;
-		ID2D1Factory* mD2DFactory;
-		ID2D1HwndRenderTarget* mRenderTarget;
-		ID2D1SolidColorBrush* mTextBrush;
-
-		IDWriteFactory* mDWriteFactory;
-		IDWriteTextFormat* mTextFormat;
-
 		float mWindowWidth;
 		float mWindowHeight;
-		float mLineHeight;
-		float mCharacterWidth;
-
-	private:
-		bool CreateDeviceResources();
-		void ReleaseDeviceResources();
 
 	public:
 		HexViewer();
@@ -47,9 +33,6 @@ namespace DuckHex
 
 		bool LoadDocument(BinaryDocument* document);
 		void UnloadDocument();
-
-		bool Initialize(HWND windowHandle);
-		void Shutdown();
 
 		bool SetCurrentSeekPosition(uint64_t position);
 		void SetViewPort(float windowWidth, float windowHeight);

@@ -25,12 +25,15 @@ namespace // static 처럼 접근 권한을 이 파일로 한정하기 위한 �
 	void CleanupRenderTarget();
 
 	void DrawMainUI();
+	void DrawMenuWindow();
 
 	LRESULT CALLBACK WindowProcedure(
 		HWND windowHandle,
 		UINT message,
 		WPARAM wParam,
 		LPARAM lParam);
+
+	void BuildDefaultDockLayout(ImGuiID dockspaceId);
 
 	DuckHex::HexViewer* gHexViewer = nullptr;
 	DuckHex::BinaryDocument* gBinaryDocument = nullptr;
@@ -147,6 +150,7 @@ int WINAPI wWinMain(
 
 	// 키보드 탐색 활성화
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	// 기본 밝은 테마
 	ImGui::StyleColorsLight();
@@ -191,7 +195,7 @@ int WINAPI wWinMain(
 		ImGui::NewFrame();
 
 		// HexViewer 렌더링 영역 업데이트
-		if (gHexViewer != nullptr && gHexViewer->HasDocument())
+		if (gHexViewer != nullptr)
 		{
 			RECT clientRect{};
 			GetClientRect(windowHandle, &clientRect);
@@ -202,8 +206,6 @@ int WINAPI wWinMain(
 			gHexViewer->SetViewPort(
 				windowWidth,
 				windowHeight);
-
-			gHexViewer->Render();
 		}
 
 		// 애플리케이션 UI 구성
@@ -260,9 +262,72 @@ namespace
 {
 	void DrawMainUI()
 	{
-		static bool showDemoWindow = false;
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-		ImGui::Begin("DuckHex");
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
+
+		constexpr ImGuiWindowFlags dockHostFlags =
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoNavFocus |
+			ImGuiWindowFlags_NoDocking;
+
+		ImGui::PushStyleVar(
+			ImGuiStyleVar_WindowRounding,
+			0.0f
+		);
+
+		ImGui::PushStyleVar(
+			ImGuiStyleVar_WindowBorderSize,
+			0.0f
+		);
+
+		ImGui::PushStyleVar(
+			ImGuiStyleVar_WindowPadding,
+			ImVec2(0.0f, 0.0f)
+		);
+
+		// DockSpace를 소유하는 숨은 부모 창
+		ImGui::Begin(
+			"DuckHexDockHost",
+			nullptr,
+			dockHostFlags
+		);
+
+		ImGui::PopStyleVar(3);
+
+		const ImGuiID dockspaceId =
+			ImGui::GetID("DuckHexDockSpace");
+
+		if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr)
+		{
+			BuildDefaultDockLayout(dockspaceId);
+		}
+
+		// 실제 DockSpace 제출
+		ImGui::DockSpace(
+			dockspaceId,
+			ImVec2(0.0f, 0.0f),
+			ImGuiDockNodeFlags_None
+		);
+
+		ImGui::End();
+
+		// DockSpace 안에 들어갈 실제 창들
+		DrawMenuWindow();
+
+		// 아직 구현 전이라면 일단 빈 창이라도 만들어야 함
+		gHexViewer->Render();
+	}
+
+	void DrawMenuWindow()
+	{
+		ImGui::Begin("Menu");
 
 		ImGui::TextUnformatted(
 			"Win32 + Direct3D 11 + Dear ImGui");
@@ -314,21 +379,7 @@ namespace
 			gBinaryDocument->Unload();
 		}
 
-		ImGui::Separator();
-
-		ImGui::Checkbox(
-			"Show ImGui Demo",
-			&showDemoWindow);
-
-		ImGui::Separator();
-
 		ImGui::End();
-
-		if (showDemoWindow)
-		{
-			ImGui::ShowDemoWindow(
-				&showDemoWindow);
-		}
 	}
 
 	bool CreateD3DDevice(HWND windowHandle)
@@ -501,4 +552,99 @@ namespace
 			wParam,
 			lParam);
 	}
+
+	void BuildDefaultDockLayout(ImGuiID dockspaceId)
+	{
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+		// 기존 DockSpace 설정 제거
+		ImGui::DockBuilderRemoveNode(dockspaceId);
+
+		// 새로운 DockSpace 생성
+		ImGui::DockBuilderAddNode(
+			dockspaceId,
+			ImGuiDockNodeFlags_DockSpace
+		);
+
+		ImGui::DockBuilderSetNodeSize(
+			dockspaceId,
+			viewport->WorkSize
+		);
+
+		// 처음에는 전체 영역이 mainDockId 하나다.
+		ImGuiID mainDockId = dockspaceId;
+		ImGuiID leftDockId = 0;
+		ImGuiID rightDockId = 0;
+		ImGuiID bottomDockId = 0;
+		ImGuiID rightBottomDockId = 0;
+
+		// 전체 영역에서 왼쪽 25% 분리
+		leftDockId = ImGui::DockBuilderSplitNode(
+			mainDockId,
+			ImGuiDir_Left,
+			0.20f,
+			nullptr,
+			&mainDockId
+		);
+
+		// 전체 영역에서 오른쪽 25% 분리
+		rightDockId = ImGui::DockBuilderSplitNode(
+			mainDockId,
+			ImGuiDir_Right,
+			0.25f,
+			nullptr,
+			&mainDockId
+		);
+
+		// 남은 메인 영역에서 아래쪽 20% 분리
+		bottomDockId = ImGui::DockBuilderSplitNode(
+			mainDockId,
+			ImGuiDir_Down,
+			0.20f,
+			nullptr,
+			&mainDockId
+		);
+
+		// 오른쪽 영역을 위아래로 50% 분리
+		rightBottomDockId = ImGui::DockBuilderSplitNode(
+			rightDockId,
+			ImGuiDir_Down,
+			0.50f,
+			nullptr,
+			&rightDockId
+		);
+
+		// 남아 있는 mainDockId가 중앙 영역
+		const ImGuiID centerDockId = mainDockId;
+
+		// 각각의 Window를 DockNode에 배치
+		ImGui::DockBuilderDockWindow(
+			"Menu",
+			leftDockId
+		);
+
+		ImGui::DockBuilderDockWindow(
+			"Hex Viewer",
+			centerDockId
+		);
+
+		ImGui::DockBuilderDockWindow(
+			"Inspector",
+			rightDockId
+		);
+
+		ImGui::DockBuilderDockWindow(
+			"Bookmarks",
+			rightBottomDockId
+		);
+
+		ImGui::DockBuilderDockWindow(
+			"Output",
+			bottomDockId
+		);
+
+		// 레이아웃 생성 완료
+		ImGui::DockBuilderFinish(dockspaceId);
+	}
 }
+

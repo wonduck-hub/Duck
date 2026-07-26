@@ -102,9 +102,6 @@ uint64_t DuckHex::HexViewer::GetDocumentSize() const
 
 void DuckHex::HexViewer::Render()
 {
-	//TOOD: ImDrawLine을 사용하여 HexViewer를 렌더링하는 로직을 추가해야 함
-	assert(mDocument != nullptr && "BinaryDocument must not be null.");
-
 	if (mDocument == nullptr)
 		return;
 
@@ -130,6 +127,7 @@ void DuckHex::HexViewer::Render()
 	if (data.empty())
 		return;
 
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(244, 233, 221, 255));
 	ImGui::Begin("Hex Viewer");
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -241,4 +239,5 @@ void DuckHex::HexViewer::Render()
 			renderedHeight));
 
 	ImGui::End();
+	ImGui::PopStyleColor();
 }
