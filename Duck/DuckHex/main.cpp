@@ -2,10 +2,14 @@
 
 #include "pch.h"
 
+#include "HexViewer.h"
+#include "BinaryDocument.h"
+
 // D3D관련 라이브러리를 링커에게 자동으로 추가
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "Comdlg32.lib")
 
 namespace // static 처럼 접근 권한을 이 파일로 한정하기 위한 것
 {
@@ -27,6 +31,35 @@ namespace // static 처럼 접근 권한을 이 파일로 한정하기 위한 �
 		UINT message,
 		WPARAM wParam,
 		LPARAM lParam);
+
+	DuckHex::HexViewer* gHexViewer = nullptr;
+	DuckHex::BinaryDocument* gBinaryDocument = nullptr;
+
+	bool CreateDuckHexResource()
+	{
+		if (gHexViewer == nullptr)
+		{
+			gHexViewer = new DuckHex::HexViewer();
+		}
+		if (gBinaryDocument == nullptr)
+		{
+			gBinaryDocument = new DuckHex::BinaryDocument();
+		}
+		return true;
+	}
+	void CleanupDuckHexResources()
+	{
+		if (gHexViewer != nullptr)
+		{
+			delete gHexViewer;
+			gHexViewer = nullptr;
+		}
+		if (gBinaryDocument != nullptr)
+		{
+			delete gBinaryDocument;
+			gBinaryDocument = nullptr;
+		}
+	}
 }
 
 // 일부 버전에서는 imgui_impl_win32.h에 이 함수 선언이 노출되지 않아
@@ -115,7 +148,7 @@ int WINAPI wWinMain(
 	// 키보드 탐색 활성화
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-	// 기본 어두운 테마
+	// 기본 밝은 테마
 	ImGui::StyleColorsLight();
 
 	// Win32 입력 처리 백엔드 초기화
@@ -125,6 +158,9 @@ int WINAPI wWinMain(
 	ImGui_ImplDX11_Init(
 		gD3DDevice,
 		gD3DDeviceContext);
+
+	// DuckHex 리소스 초기화
+	CreateDuckHexResource();
 
 	bool applicationRunning = true;
 
@@ -153,6 +189,22 @@ int WINAPI wWinMain(
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+
+		// HexViewer 렌더링 영역 업데이트
+		if (gHexViewer != nullptr && gHexViewer->HasDocument())
+		{
+			RECT clientRect{};
+			GetClientRect(windowHandle, &clientRect);
+			const float windowWidth =
+				static_cast<float>(clientRect.right - clientRect.left);
+			const float windowHeight =
+				static_cast<float>(clientRect.bottom - clientRect.top);
+			gHexViewer->SetViewPort(
+				windowWidth,
+				windowHeight);
+
+			gHexViewer->Render();
+		}
 
 		// 애플리케이션 UI 구성
 		DrawMainUI();
@@ -199,6 +251,8 @@ int WINAPI wWinMain(
 	DestroyWindow(windowHandle);
 	UnregisterClassW(windowClassName, instance);
 
+	CleanupDuckHexResources();
+
 	return 0;
 }
 
@@ -217,9 +271,31 @@ namespace
 
 		if (ImGui::Button("Open File"))
 		{
-			// TODO:
-			// 파일 선택 대화상자 호출
-			// HexDocument 생성
+			OPENFILENAMEW fileDialog{};
+
+			wchar_t filePath[MAX_PATH]{};
+
+			fileDialog.lStructSize = sizeof(fileDialog);
+			fileDialog.hwndOwner = nullptr;
+			fileDialog.lpstrFile = filePath;
+			fileDialog.nMaxFile = MAX_PATH;
+
+			fileDialog.lpstrFilter =
+				L"All Files\0*.*\0"
+				L"Executable Files\0*.exe\0"
+				L"Binary Files\0*.bin\0\0";
+
+			fileDialog.Flags =
+				OFN_FILEMUSTEXIST |
+				OFN_PATHMUSTEXIST;
+
+			if (GetOpenFileNameW(&fileDialog))
+			{
+				if (gBinaryDocument->LoadFile(filePath))
+				{
+					gHexViewer->LoadDocument(gBinaryDocument);
+				}
+			}
 		}
 
 		ImGui::SameLine();
@@ -234,8 +310,8 @@ namespace
 
 		if (ImGui::Button("Close"))
 		{
-			// TODO:
-			// 현재 문서 닫기
+			gHexViewer->UnloadDocument();
+			gBinaryDocument->Unload();
 		}
 
 		ImGui::Separator();

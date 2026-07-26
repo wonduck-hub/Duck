@@ -7,6 +7,8 @@
 #include <iostream>
 #include <fstream>
 #include <assert.h>
+#include <cmath>
+#include <commdlg.h>
 
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
