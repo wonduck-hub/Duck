@@ -1,0 +1,90 @@
+name: Bug Report
+description: 버그를 등록합니다.
+title: "[Bug] "
+type: Bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 버그 등록 전 확인사항
+        - 기존에 동일한 버그가 등록되어 있는지 검색해주세요.
+        - 가능하면 로그, 스크린샷 또는 영상을 첨부해주세요.
+        - 재현 절차를 최대한 자세히 작성해주세요.
+
+  - type: dropdown
+    id: product
+    attributes:
+      label: 제품
+      options:
+        - DuckHex
+        - DAPI
+        - 미정
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 발견 버전
+      description: 문제가 발생한 프로그램 버전을 입력해주세요.
+      placeholder: ex) v1.2.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 버그 설명
+      description: 어떤 문제가 발생했는지 간략하게 설명해주세요.
+      placeholder: 프로그램 종료 버튼을 누르면 프로그램이 종료되지 않습니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법
+      description: 버그를 재현하는 절차를 작성해주세요.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 예상 결과
+      description: 정상적으로는 어떻게 동작해야 하나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과
+      description: 실제로 어떻게 동작했나요?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / 스크린샷 / 추가 정보
+      description: 로그, 스크린샷, 동영상 또는 기타 참고자료를 첨부해주세요.
+      placeholder: |
+        로그:
+        스크린샷:
+        기타:
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 확인 사항
+      options:
+        - label: 기존 Issue를 검색했습니다.
+          required: true
+        - label: 재현 절차를 작성했습니다.
+          required: true
