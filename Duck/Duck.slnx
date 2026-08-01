@@ -11,6 +11,7 @@
   <Folder Name="/01_DuckAPI/">
     <Project Path="Communication/Communication.csproj" Id="af112935-9192-4343-900e-453bc0fa4f3c" />
     <Project Path="DAI/DAI.csproj" Id="b748c210-d69f-4cf3-9c4b-b5ca194c4ae2" />
+    <Project Path="DLogger/DLogger.csproj" />
     <Project Path="DMedia/DMedia.csproj" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
