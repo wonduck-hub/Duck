@@ -64,6 +64,8 @@ vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint6
 	std::vector<uint8_t> result(
 		static_cast<size_t>(readSize));
 
+	mFileStream.clear();
+
 	mFileStream.seekg(
 		static_cast<std::streamoff>(seekPosition),
 		std::ios::beg);

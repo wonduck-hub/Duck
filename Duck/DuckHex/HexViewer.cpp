@@ -1,16 +1,18 @@
 #define NOMINMAX
 #include "HexViewer.h"
 
+#include <algorithm>
+
 DuckHex::HexViewer::HexViewer()
 	: mDocument(nullptr), mCurrentSeekPosition(0),
 	mCurrentBytesPerLine(DEFAULT_BYTES_PER_LINE), mTotalLines(0),
-	mWindowWidth(0), mWindowHeight(0)
+	mShouldResetScroll(false), mWindowWidth(0), mWindowHeight(0)
 {}
 
 DuckHex::HexViewer::HexViewer(BinaryDocument* document)
 	: mDocument(document), mCurrentSeekPosition(0),
 	mCurrentBytesPerLine(DEFAULT_BYTES_PER_LINE), mTotalLines(0),
-	mWindowWidth(0), mWindowHeight(0)
+	mShouldResetScroll(false), mWindowWidth(0), mWindowHeight(0)
 {}
 
 DuckHex::HexViewer::~HexViewer()
@@ -31,6 +33,9 @@ bool DuckHex::HexViewer::LoadDocument(BinaryDocument* document)
 	}
 
 	mDocument = document;
+	mCurrentSeekPosition = 0;
+	mTotalLines = 0;
+	mShouldResetScroll = true;
 	return true;
 }
 
@@ -40,6 +45,10 @@ void DuckHex::HexViewer::UnloadDocument()
 	{
 		mDocument = nullptr;
 	}
+
+	mCurrentSeekPosition = 0;
+	mTotalLines = 0;
+	mShouldResetScroll = true;
 }
 
 bool DuckHex::HexViewer::SetCurrentSeekPosition(uint64_t position)
@@ -58,18 +67,12 @@ void DuckHex::HexViewer::SetViewPort(float windowWidth, float windowHeight)
 	mWindowWidth = windowWidth;
 	mWindowHeight = windowHeight;
 
-	// format
-	/*
-	offset: 8
-	whitespace: 1
-	one byte: "00 " = 3
-	line: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00 -> 8바이트에서 한칸 더 비움
-	*/
-
 	const float offsetWidth = ImGui::CalcTextSize("00000000 ").x;
-	const float byteCellWidth = ImGui::CalcTextSize("00 ").x; // 추후 넓이 고정을 해제할 때 사용
+	const float byteCellWidth = ImGui::CalcTextSize("00 ").x;
 
-	// 현재는 한 행당 16Byte를 고정으로 사용한다.
+	(void)offsetWidth;
+	(void)byteCellWidth;
+
 	mCurrentBytesPerLine = DEFAULT_BYTES_PER_LINE;
 
 	const float lineHeight = ImGui::GetTextLineHeight();
@@ -103,49 +106,75 @@ uint64_t DuckHex::HexViewer::GetDocumentSize() const
 void DuckHex::HexViewer::Render()
 {
 	if (mDocument == nullptr)
+	{
 		return;
+	}
 
 	const uint64_t documentSize = mDocument->GetSize();
 
-	if (documentSize == 0 || mCurrentSeekPosition >= documentSize)
-		return;
-
-	/*
-		현재 화면에 필요한 데이터 크기
-
-		예:
-		16 bytes/line * 30 lines = 480 bytes
-	*/
-	const uint64_t requestedSize =
-		mCurrentBytesPerLine * mTotalLines;
-
-	std::vector<uint8_t> data =
-		mDocument->GetDataBySeekPositionOrNull(
-			mCurrentSeekPosition,
-			requestedSize);
-
-	if (data.empty())
-		return;
-
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, IM_COL32(244, 233, 221, 255));
 	ImGui::Begin("Hex Viewer");
+
+	bool bScrollWasReset = false;
+
+	if (mShouldResetScroll)
+	{
+		ImGui::SetScrollY(0.0f);
+		mShouldResetScroll = false;
+		bScrollWasReset = true;
+	}
+
+	if (documentSize == 0)
+	{
+		ImGui::End();
+		ImGui::PopStyleColor();
+		return;
+	}
+
+	const float lineHeight = ImGui::GetTextLineHeight();
+	const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
+	const float availableHeight = availableRegion.y;
+	const float scrollY = bScrollWasReset ? 0.0f : ImGui::GetScrollY();
+	const uint64_t visibleLineCount = std::max<uint64_t>(1, static_cast<uint64_t>(availableHeight / lineHeight) + 1);
+
+	const uint64_t documentLineCount = (documentSize + mCurrentBytesPerLine - 1) / mCurrentBytesPerLine;
+
+	const float totalContentHeight = static_cast<float>(documentLineCount) * lineHeight;
+
+	const uint64_t firstVisibleLine = std::min<uint64_t>(static_cast<uint64_t>(scrollY / lineHeight), documentLineCount - 1);
+
+	mCurrentSeekPosition = firstVisibleLine * mCurrentBytesPerLine;
+	mTotalLines = visibleLineCount;
+
+	const uint64_t requestedSize = mCurrentBytesPerLine * visibleLineCount;
+
+	std::vector<uint8_t> data = mDocument->GetDataBySeekPositionOrNull(mCurrentSeekPosition, requestedSize);
+
+	if (data.empty())
+	{
+		ImGui::End();
+		ImGui::PopStyleColor();
+		return;
+	}
+
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 	const ImVec2 startPosition = ImGui::GetCursorScreenPos();
 	const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
-	const float lineHeight = ImGui::GetTextLineHeight();
 
 	constexpr uint64_t BYTE_GROUP_SIZE = 8;
 
 	for (uint64_t lineIndex = 0;
-		lineIndex < mTotalLines;
+		lineIndex < visibleLineCount;
 		++lineIndex)
 	{
 		const uint64_t lineDataIndex =
 			lineIndex * mCurrentBytesPerLine;
 
 		if (lineDataIndex >= data.size())
+		{
 			break;
+		}
 
 		const uint64_t remainingDataSize =
 			static_cast<uint64_t>(data.size()) - lineDataIndex;
@@ -165,7 +194,9 @@ void DuckHex::HexViewer::Render()
 			static_cast<unsigned long long>(lineOffset));
 
 		if (writtenLength < 0)
+		{
 			continue;
+		}
 
 		std::size_t currentLength =
 			static_cast<std::size_t>(writtenLength);
@@ -174,12 +205,13 @@ void DuckHex::HexViewer::Render()
 			byteIndex < bytesInLine;
 			++byteIndex)
 		{
-			// 8바이트 이후 한 칸을 추가로 띄운다.
 			if (byteIndex > 0 &&
 				byteIndex % BYTE_GROUP_SIZE == 0)
 			{
 				if (currentLength + 1 >= sizeof(lineBuffer))
+				{
 					break;
+				}
 
 				lineBuffer[currentLength++] = ' ';
 				lineBuffer[currentLength] = '\0';
@@ -196,7 +228,9 @@ void DuckHex::HexViewer::Render()
 				static_cast<unsigned int>(value));
 
 			if (byteLength < 0)
+			{
 				break;
+			}
 
 			const std::size_t convertedByteLength =
 				static_cast<std::size_t>(byteLength);
@@ -213,7 +247,8 @@ void DuckHex::HexViewer::Render()
 		const ImVec2 linePosition(
 			startPosition.x,
 			startPosition.y +
-			static_cast<float>(lineIndex) * lineHeight);
+			static_cast<float>(firstVisibleLine + lineIndex) *
+			lineHeight);
 
 		drawList->AddText(
 			linePosition,
@@ -221,22 +256,10 @@ void DuckHex::HexViewer::Render()
 			lineBuffer);
 	}
 
-	/*
-		ImDrawList로 직접 그린 내용은 ImGui 레이아웃 크기에
-		자동 반영되지 않으므로 사용한 영역을 직접 확보한다.
-	*/
-	const uint64_t renderedLineCount =
-		(static_cast<uint64_t>(data.size()) +
-			mCurrentBytesPerLine - 1) /
-		mCurrentBytesPerLine;
-
-	const float renderedHeight =
-		static_cast<float>(renderedLineCount) * lineHeight;
-
 	ImGui::Dummy(
 		ImVec2(
-			mWindowWidth,
-			renderedHeight));
+			availableRegion.x,
+			totalContentHeight));
 
 	ImGui::End();
 	ImGui::PopStyleColor();

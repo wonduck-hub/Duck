@@ -19,6 +19,7 @@ namespace DuckHex
 		uint64_t mCurrentSeekPosition;
 		uint64_t mCurrentBytesPerLine;
 		uint64_t mTotalLines;
+		bool mShouldResetScroll;
 
 		static const uint32_t DEFAULT_BYTES_PER_LINE = 16;
 		static const uint32_t DEFAULT_FONT_SIZE = 10;
