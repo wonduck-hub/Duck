@@ -451,6 +451,8 @@ void DuckHex::HexViewer::redo()
 
 void DuckHex::HexViewer::Render()
 {
+	#pragma region Window Setup
+
 	if (mDocument == nullptr)
 	{
 		return;
@@ -470,12 +472,20 @@ void DuckHex::HexViewer::Render()
 		bScrollWasReset = true;
 	}
 
+	#pragma endregion
+
+	#pragma region Empty Document
+
 	if (documentSize == 0)
 	{
 		ImGui::End();
 		ImGui::PopStyleColor();
 		return;
 	}
+
+	#pragma endregion
+
+	#pragma region Toolbar and Keyboard Input
 
 	handleKeyboardInput();
 
@@ -500,6 +510,10 @@ void DuckHex::HexViewer::Render()
 
 	ImGui::Separator();
 
+	#pragma endregion
+
+	#pragma region Scroll and Visible Data
+
 	const float lineHeight = ImGui::GetTextLineHeight();
 	const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
 	const float availableHeight = availableRegion.y;
@@ -515,7 +529,7 @@ void DuckHex::HexViewer::Render()
 	mCurrentSeekPosition = firstVisibleLine * mCurrentBytesPerLine;
 	mTotalLines = visibleLineCount;
 
-	const uint64_t requestedSize = mCurrentBytesPerLine * visibleLineCount;
+	const uint64_t requestedSize = mCurrentBytesPerLine * visibleLineCount; // 현제 화면에 보이는 라인 수에 맞춰서 데이터 크기를 구한 변수
 
 	std::vector<uint8_t> data = mDocument->GetDataBySeekPositionOrNull(mCurrentSeekPosition, requestedSize);
 
@@ -525,6 +539,10 @@ void DuckHex::HexViewer::Render()
 		ImGui::PopStyleColor();
 		return;
 	}
+
+	#pragma endregion
+
+	#pragma region Mouse Selection and Editing Input
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -598,6 +616,10 @@ void DuckHex::HexViewer::Render()
 
 		openEditPopup();
 	}
+
+	#pragma endregion
+
+	#pragma region Visible Byte Rendering
 
 	for (uint64_t lineIndex = 0;
 		lineIndex < visibleLineCount;
@@ -697,6 +719,10 @@ void DuckHex::HexViewer::Render()
 		}
 	}
 
+	#pragma endregion
+
+	#pragma region Content Size and Edit Popup
+
 	ImGui::Dummy(
 		ImVec2(
 			availableRegion.x,
@@ -706,4 +732,6 @@ void DuckHex::HexViewer::Render()
 
 	ImGui::End();
 	ImGui::PopStyleColor();
+
+	#pragma endregion
 }

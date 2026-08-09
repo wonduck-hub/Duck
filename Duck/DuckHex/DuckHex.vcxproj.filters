@@ -99,7 +99,7 @@
       <Filter>HexEditor</Filter>
     </ClCompile>
     <ClCompile Include="UndoManager.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>HexEditor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
