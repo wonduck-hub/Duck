@@ -19,6 +19,7 @@ namespace DuckHex
 		bool LoadFile(const filesystem::path& filePath);
 		void Unload();
 		vector<uint8_t> GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size);
+		bool OverwriteData(uint64_t offset, const vector<uint8_t>& data);
 		uint64_t GetSize() const;
 	};
 }

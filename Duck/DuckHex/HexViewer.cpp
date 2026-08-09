@@ -2,18 +2,28 @@
 #include "HexViewer.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cstring>
 
 DuckHex::HexViewer::HexViewer()
 	: mDocument(nullptr), mCurrentSeekPosition(0),
 	mCurrentBytesPerLine(DEFAULT_BYTES_PER_LINE), mTotalLines(0),
-	mShouldResetScroll(false), mWindowWidth(0), mWindowHeight(0)
-{}
+	mShouldResetScroll(false), mSelection(), mUndoManager(),
+	mbIsSelecting(false), mSelectionAnchorOffset(0), mEditBuffer{},
+	mbShouldOpenEditPopup(false), mbShouldFocusEditInput(false), mEditError(),
+	mWindowWidth(0), mWindowHeight(0)
+{
+}
 
 DuckHex::HexViewer::HexViewer(BinaryDocument* document)
 	: mDocument(document), mCurrentSeekPosition(0),
 	mCurrentBytesPerLine(DEFAULT_BYTES_PER_LINE), mTotalLines(0),
-	mShouldResetScroll(false), mWindowWidth(0), mWindowHeight(0)
-{}
+	mShouldResetScroll(false), mSelection(), mUndoManager(),
+	mbIsSelecting(false), mSelectionAnchorOffset(0), mEditBuffer{},
+	mbShouldOpenEditPopup(false), mbShouldFocusEditInput(false), mEditError(),
+	mWindowWidth(0), mWindowHeight(0)
+{
+}
 
 DuckHex::HexViewer::~HexViewer()
 {
@@ -36,6 +46,13 @@ bool DuckHex::HexViewer::LoadDocument(BinaryDocument* document)
 	mCurrentSeekPosition = 0;
 	mTotalLines = 0;
 	mShouldResetScroll = true;
+	mSelection.Clear();
+	mbIsSelecting = false;
+	mSelectionAnchorOffset = 0;
+	mEditBuffer[0] = '\0';
+	mbShouldOpenEditPopup = false;
+	mbShouldFocusEditInput = false;
+	mEditError.clear();
 	return true;
 }
 
@@ -49,6 +66,13 @@ void DuckHex::HexViewer::UnloadDocument()
 	mCurrentSeekPosition = 0;
 	mTotalLines = 0;
 	mShouldResetScroll = true;
+	mSelection.Clear();
+	mbIsSelecting = false;
+	mSelectionAnchorOffset = 0;
+	mEditBuffer[0] = '\0';
+	mbShouldOpenEditPopup = false;
+	mbShouldFocusEditInput = false;
+	mEditError.clear();
 }
 
 bool DuckHex::HexViewer::SetCurrentSeekPosition(uint64_t position)
@@ -103,6 +127,328 @@ uint64_t DuckHex::HexViewer::GetDocumentSize() const
 	return mDocument->GetSize();
 }
 
+bool DuckHex::HexViewer::getByteOffsetFromMousePosition(
+	const ImVec2& mousePosition,
+	const ImVec2& hexStartPosition,
+	float byteCellWidth,
+	float lineHeight,
+	uint64_t firstVisibleLine,
+	uint64_t documentLineCount,
+	uint64_t* outOffset) const
+{
+	assert(outOffset != nullptr && "Output offset pointer must not be null.");
+
+	if (mousePosition.x < hexStartPosition.x ||
+		mousePosition.y < hexStartPosition.y)
+	{
+		return false;
+	}
+
+	constexpr uint64_t BYTE_GROUP_SIZE = 8;
+
+	const float spaceWidth = ImGui::CalcTextSize(" ").x;
+	const float relativeY = mousePosition.y - hexStartPosition.y;
+	const uint64_t lineIndex = static_cast<uint64_t>(relativeY / lineHeight);
+	const uint64_t documentLine = firstVisibleLine + lineIndex;
+
+	if (documentLine >= documentLineCount)
+	{
+		return false;
+	}
+
+	for (uint64_t byteIndex = 0;
+		byteIndex < mCurrentBytesPerLine;
+		++byteIndex)
+	{
+		const float byteX =
+			hexStartPosition.x +
+			static_cast<float>(byteIndex) * byteCellWidth +
+			static_cast<float>(byteIndex / BYTE_GROUP_SIZE) * spaceWidth;
+
+		if (mousePosition.x >= byteX &&
+			mousePosition.x < byteX + byteCellWidth)
+		{
+			const uint64_t offset =
+				documentLine * mCurrentBytesPerLine + byteIndex;
+
+			if (mDocument != nullptr &&
+				offset < mDocument->GetSize())
+			{
+				*outOffset = offset;
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	return false;
+}
+
+bool DuckHex::HexViewer::parseHexBytes(
+	const char* text,
+	std::vector<uint8_t>* outBytes) const
+{
+	assert(text != nullptr && "Text must not be null.");
+	assert(outBytes != nullptr && "Output bytes pointer must not be null.");
+
+	outBytes->clear();
+
+	std::string hexDigits;
+
+	for (const char* current = text; *current != '\0'; ++current)
+	{
+		const unsigned char ch = static_cast<unsigned char>(*current);
+
+		if (std::isxdigit(ch) != 0)
+		{
+			hexDigits.push_back(static_cast<char>(ch));
+			continue;
+		}
+
+		if (std::isspace(ch) != 0 ||
+			*current == ',' ||
+			*current == '-' ||
+			*current == '_')
+		{
+			continue;
+		}
+
+		return false;
+	}
+
+	if (hexDigits.empty() ||
+		hexDigits.size() % 2 != 0)
+	{
+		return false;
+	}
+
+	for (std::size_t index = 0;
+		index < hexDigits.size();
+		index += 2)
+	{
+		const char byteText[3]
+		{
+			hexDigits[index],
+			hexDigits[index + 1],
+			'\0'
+		};
+
+		char* endOrNull = nullptr;
+		const unsigned long value = std::strtoul(byteText, &endOrNull, 16);
+
+		if (endOrNull == byteText ||
+			*endOrNull != '\0' ||
+			value > 0xFF)
+		{
+			outBytes->clear();
+			return false;
+		}
+
+		outBytes->push_back(static_cast<uint8_t>(value));
+	}
+
+	return true;
+}
+
+void DuckHex::HexViewer::handleKeyboardInput()
+{
+	if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+	{
+		return;
+	}
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (io.KeyCtrl &&
+		ImGui::IsKeyPressed(ImGuiKey_Z))
+	{
+		undo();
+		return;
+	}
+
+	if (io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z))
+	{
+		redo();
+		return;
+	}
+
+	if (!mSelection.IsEmpty() &&
+		(ImGui::IsKeyPressed(ImGuiKey_Enter) ||
+			ImGui::IsKeyPressed(ImGuiKey_KeypadEnter)))
+	{
+		openEditPopup();
+	}
+}
+
+void DuckHex::HexViewer::openEditPopup()
+{
+	if (mSelection.IsEmpty())
+	{
+		return;
+	}
+
+	mEditBuffer[0] = '\0';
+	mEditError.clear();
+	mbShouldOpenEditPopup = true;
+	mbShouldFocusEditInput = true;
+}
+
+void DuckHex::HexViewer::renderEditPopup()
+{
+	if (mbShouldOpenEditPopup)
+	{
+		ImGui::OpenPopup("Replace Hex Range");
+		mbShouldOpenEditPopup = false;
+	}
+
+	if (!ImGui::BeginPopupModal(
+		"Replace Hex Range",
+		nullptr,
+		ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		return;
+	}
+
+	ImGui::Text(
+		"Offset: %08llX, Length: %llu bytes",
+		static_cast<unsigned long long>(mSelection.Begin()),
+		static_cast<unsigned long long>(mSelection.Length()));
+
+	if (mbShouldFocusEditInput)
+	{
+		ImGui::SetKeyboardFocusHere();
+		mbShouldFocusEditInput = false;
+	}
+
+	const bool bInputSubmitted = ImGui::InputText(
+		"Hex",
+		mEditBuffer,
+		sizeof(mEditBuffer),
+		ImGuiInputTextFlags_CharsHexadecimal |
+		ImGuiInputTextFlags_CharsUppercase |
+		ImGuiInputTextFlags_EnterReturnsTrue);
+
+	if (!mEditError.empty())
+	{
+		ImGui::TextColored(
+			ImVec4(0.80f, 0.10f, 0.10f, 1.0f),
+			"%s",
+			mEditError.c_str());
+	}
+
+	if (ImGui::Button("Replace") ||
+		bInputSubmitted)
+	{
+		std::vector<uint8_t> newData;
+
+		if (!parseHexBytes(mEditBuffer, &newData))
+		{
+			mEditError = "Enter an even number of hexadecimal digits.";
+		}
+		else if (replaceSelection(newData))
+		{
+			ImGui::CloseCurrentPopup();
+		}
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Cancel") ||
+		ImGui::IsKeyPressed(ImGuiKey_Escape))
+	{
+		ImGui::CloseCurrentPopup();
+	}
+
+	ImGui::EndPopup();
+}
+
+bool DuckHex::HexViewer::replaceSelection(const std::vector<uint8_t>& newData)
+{
+	if (mDocument == nullptr ||
+		mSelection.IsEmpty())
+	{
+		return false;
+	}
+
+	const uint64_t selectionLength = mSelection.Length();
+
+	if (newData.size() != selectionLength)
+	{
+		mEditError = "Overwrite-only replace requires the same byte count.";
+		return false;
+	}
+
+	std::vector<uint8_t> oldData =
+		mDocument->GetDataBySeekPositionOrNull(
+			mSelection.Begin(),
+			selectionLength);
+
+	if (oldData.size() != newData.size())
+	{
+		mEditError = "Could not read the selected range.";
+		return false;
+	}
+
+	if (!mDocument->OverwriteData(
+		mSelection.Begin(),
+		newData))
+	{
+		mEditError = "Could not write the selected range.";
+		return false;
+	}
+
+	UndoManager::UndoAction action(
+		static_cast<size_t>(mSelection.Begin()),
+		oldData,
+		newData);
+
+	mUndoManager.AddAction(action);
+	return true;
+}
+
+void DuckHex::HexViewer::applyUndoAction(
+	const UndoManager::UndoAction& action,
+	bool bUseNewData)
+{
+	if (mDocument == nullptr)
+	{
+		return;
+	}
+
+	const std::vector<uint8_t>& data =
+		bUseNewData ? action.GetNewData() : action.GetOldData();
+
+	if (mDocument->OverwriteData(action.GetOffset(), data))
+	{
+		mSelection.SetRange(
+			action.GetOffset(),
+			action.GetOffset() + data.size());
+	}
+}
+
+void DuckHex::HexViewer::undo()
+{
+	std::optional<UndoManager::UndoAction> actionOrNull =
+		mUndoManager.Undo();
+
+	if (actionOrNull.has_value())
+	{
+		applyUndoAction(actionOrNull.value(), false);
+	}
+}
+
+void DuckHex::HexViewer::redo()
+{
+	std::optional<UndoManager::UndoAction> actionOrNull =
+		mUndoManager.Redo();
+
+	if (actionOrNull.has_value())
+	{
+		applyUndoAction(actionOrNull.value(), true);
+	}
+}
+
 void DuckHex::HexViewer::Render()
 {
 	if (mDocument == nullptr)
@@ -130,6 +476,29 @@ void DuckHex::HexViewer::Render()
 		ImGui::PopStyleColor();
 		return;
 	}
+
+	handleKeyboardInput();
+
+	if (ImGui::Button("Edit"))
+	{
+		openEditPopup();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Undo"))
+	{
+		undo();
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Redo"))
+	{
+		redo();
+	}
+
+	ImGui::Separator();
 
 	const float lineHeight = ImGui::GetTextLineHeight();
 	const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
@@ -161,8 +530,74 @@ void DuckHex::HexViewer::Render()
 
 	const ImVec2 startPosition = ImGui::GetCursorScreenPos();
 	const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
+	const ImU32 selectedBackgroundColor =
+		ImGui::GetColorU32(ImVec4(0.22f, 0.42f, 0.80f, 0.35f));
+	const ImU32 selectedTextColor =
+		ImGui::GetColorU32(ImVec4(0.05f, 0.08f, 0.12f, 1.0f));
 
 	constexpr uint64_t BYTE_GROUP_SIZE = 8;
+	const float addressWidth = ImGui::CalcTextSize("00000000 ").x;
+	const float byteCellWidth = ImGui::CalcTextSize("00 ").x;
+	const float groupSpaceWidth = ImGui::CalcTextSize(" ").x;
+	const ImVec2 hexStartPosition(
+		startPosition.x + addressWidth,
+		startPosition.y);
+
+	uint64_t hoveredByteOffset = 0;
+	const bool bHasHoveredByte =
+		ImGui::IsWindowHovered() &&
+		getByteOffsetFromMousePosition(
+			ImGui::GetMousePos(),
+			hexStartPosition,
+			byteCellWidth,
+			lineHeight,
+			firstVisibleLine,
+			documentLineCount,
+			&hoveredByteOffset);
+
+	if (bHasHoveredByte &&
+		ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+	{
+		mbIsSelecting = true;
+		mSelectionAnchorOffset = hoveredByteOffset;
+		mSelection.SetSingleByte(hoveredByteOffset);
+	}
+
+	if (mbIsSelecting &&
+		ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
+		bHasHoveredByte)
+	{
+		const uint64_t begin =
+			std::min(mSelectionAnchorOffset, hoveredByteOffset);
+		const uint64_t end =
+			std::max(mSelectionAnchorOffset, hoveredByteOffset) + 1;
+
+		mSelection.SetRange(begin, end);
+	}
+
+	if (mbIsSelecting &&
+		!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+	{
+		mbIsSelecting = false;
+	}
+
+	if (bHasHoveredByte &&
+		ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+	{
+		mSelection.SetSingleByte(hoveredByteOffset);
+		openEditPopup();
+	}
+
+	if (bHasHoveredByte &&
+		ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+	{
+		if (!mSelection.Contains(hoveredByteOffset))
+		{
+			mSelection.SetSingleByte(hoveredByteOffset);
+		}
+
+		openEditPopup();
+	}
 
 	for (uint64_t lineIndex = 0;
 		lineIndex < visibleLineCount;
@@ -185,11 +620,11 @@ void DuckHex::HexViewer::Render()
 		const uint64_t lineOffset =
 			mCurrentSeekPosition + lineDataIndex;
 
-		char lineBuffer[128]{};
+		char addressBuffer[32]{};
 
-		int writtenLength = std::snprintf(
-			lineBuffer,
-			sizeof(lineBuffer),
+		const int writtenLength = std::snprintf(
+			addressBuffer,
+			sizeof(addressBuffer),
 			"%08llX ",
 			static_cast<unsigned long long>(lineOffset));
 
@@ -198,68 +633,76 @@ void DuckHex::HexViewer::Render()
 			continue;
 		}
 
-		std::size_t currentLength =
-			static_cast<std::size_t>(writtenLength);
+		const ImVec2 linePosition(
+			startPosition.x,
+			startPosition.y +
+			static_cast<float>(lineIndex) * lineHeight);
+
+		drawList->AddText(
+			linePosition,
+			textColor,
+			addressBuffer);
 
 		for (uint64_t byteIndex = 0;
 			byteIndex < bytesInLine;
 			++byteIndex)
 		{
-			if (byteIndex > 0 &&
-				byteIndex % BYTE_GROUP_SIZE == 0)
-			{
-				if (currentLength + 1 >= sizeof(lineBuffer))
-				{
-					break;
-				}
-
-				lineBuffer[currentLength++] = ' ';
-				lineBuffer[currentLength] = '\0';
-			}
+			const uint64_t documentOffset =
+				lineOffset + byteIndex;
 
 			const uint8_t value =
 				data[static_cast<std::size_t>(
 					lineDataIndex + byteIndex)];
 
+			char byteBuffer[4]{};
+
 			const int byteLength = std::snprintf(
-				lineBuffer + currentLength,
-				sizeof(lineBuffer) - currentLength,
-				"%02X ",
+				byteBuffer,
+				sizeof(byteBuffer),
+				"%02X",
 				static_cast<unsigned int>(value));
 
 			if (byteLength < 0)
 			{
-				break;
+				continue;
 			}
 
-			const std::size_t convertedByteLength =
-				static_cast<std::size_t>(byteLength);
+			const float byteX =
+				hexStartPosition.x +
+				static_cast<float>(byteIndex) * byteCellWidth +
+				static_cast<float>(byteIndex / BYTE_GROUP_SIZE) *
+				groupSpaceWidth;
 
-			if (convertedByteLength >=
-				sizeof(lineBuffer) - currentLength)
+			const ImVec2 bytePosition(
+				byteX,
+				linePosition.y);
+
+			const bool bSelected =
+				mSelection.Contains(documentOffset);
+
+			if (bSelected)
 			{
-				break;
+				drawList->AddRectFilled(
+					bytePosition,
+					ImVec2(
+						bytePosition.x + byteCellWidth,
+						bytePosition.y + lineHeight),
+					selectedBackgroundColor);
 			}
 
-			currentLength += convertedByteLength;
+			drawList->AddText(
+				bytePosition,
+				bSelected ? selectedTextColor : textColor,
+				byteBuffer);
 		}
-
-		const ImVec2 linePosition(
-			startPosition.x,
-			startPosition.y +
-			static_cast<float>(firstVisibleLine + lineIndex) *
-			lineHeight);
-
-		drawList->AddText(
-			linePosition,
-			textColor,
-			lineBuffer);
 	}
 
 	ImGui::Dummy(
 		ImVec2(
 			availableRegion.x,
 			totalContentHeight));
+
+	renderEditPopup();
 
 	ImGui::End();
 	ImGui::PopStyleColor();

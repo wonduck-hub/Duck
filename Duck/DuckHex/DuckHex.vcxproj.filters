@@ -57,6 +57,12 @@
     <ClInclude Include="HexViewer.h">
       <Filter>HexEditor</Filter>
     </ClInclude>
+    <ClInclude Include="ByteSelection.h">
+      <Filter>HexEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="UndoManager.h">
+      <Filter>HexEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -88,6 +94,12 @@
     </ClCompile>
     <ClCompile Include="HexViewer.cpp">
       <Filter>HexEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="ByteSelection.cpp">
+      <Filter>HexEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="UndoManager.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

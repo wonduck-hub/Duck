@@ -81,6 +81,39 @@ vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint6
 	return result;
 }
 
+bool DuckHex::BinaryDocument::OverwriteData(uint64_t offset, const vector<uint8_t>& data)
+{
+	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
+
+	if (data.empty())
+	{
+		return false;
+	}
+
+	if (offset >= mFileSize)
+	{
+		return false;
+	}
+
+	if (static_cast<uint64_t>(data.size()) > mFileSize - offset)
+	{
+		return false;
+	}
+
+	mFileStream.clear();
+	mFileStream.seekp(
+		static_cast<std::streamoff>(offset),
+		std::ios::beg);
+
+	mFileStream.write(
+		reinterpret_cast<const char*>(data.data()),
+		static_cast<std::streamsize>(data.size()));
+
+	mFileStream.flush();
+
+	return !mFileStream.fail();
+}
+
 uint64_t DuckHex::BinaryDocument::GetSize() const
 {
 	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");

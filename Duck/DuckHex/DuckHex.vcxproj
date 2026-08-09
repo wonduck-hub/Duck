@@ -203,6 +203,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BinaryDocument.h" />
+    <ClInclude Include="ByteSelection.h" />
     <ClInclude Include="HexViewer.h" />
     <ClInclude Include="Imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="Imgui\backends\imgui_impl_win32.h" />
@@ -213,9 +214,11 @@
     <ClInclude Include="Imgui\imstb_textedit.h" />
     <ClInclude Include="Imgui\imstb_truetype.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="UndoManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BinaryDocument.cpp" />
+    <ClCompile Include="ByteSelection.cpp" />
     <ClCompile Include="HexViewer.cpp" />
     <ClCompile Include="Imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="Imgui\backends\imgui_impl_win32.cpp" />
@@ -225,6 +228,7 @@
     <ClCompile Include="Imgui\imgui_tables.cpp" />
     <ClCompile Include="Imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="UndoManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
