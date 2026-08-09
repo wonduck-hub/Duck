@@ -1,0 +1,237 @@
+{
+  "name": "GitHubIssueQuality",
+  "compatibilityLevel": 1565,
+  "model": {
+    "culture": "en-US",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "expressions": [
+      {
+        "name": "GitHubOwner",
+        "kind": "m",
+        "expression": "\"wonduck-hub\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "GitHubRepo",
+        "kind": "m",
+        "expression": "\"Duck\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "GitHubToken",
+        "kind": "m",
+        "expression": "\"\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "GitHubRequestHeaders",
+        "kind": "m",
+        "expression": "let\n    BaseHeaders = [\n        Accept = \"application/vnd.github+json\"\n    ],\n    TokenText = if GitHubToken = null then \"\" else Text.Trim(GitHubToken),\n    Headers = if TokenText = \"\" then BaseHeaders else Record.AddField(BaseHeaders, \"Authorization\", \"Bearer \" & TokenText)\nin\n    Headers"
+      },
+      {
+        "name": "GitHubPageSize",
+        "kind": "m",
+        "expression": "100 meta [IsParameterQuery=true, Type=\"Number\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "GitHubMaxPages",
+        "kind": "m",
+        "expression": "20 meta [IsParameterQuery=true, Type=\"Number\", IsParameterQueryRequired=true]"
+      },
+      {
+        "name": "StaleIssueDays",
+        "kind": "m",
+        "expression": "30 meta [IsParameterQuery=true, Type=\"Number\", IsParameterQueryRequired=true]"
+      }
+    ],
+    "tables": [
+      {
+        "name": "Issues",
+        "columns": [
+          { "name": "Number", "dataType": "int64", "sourceColumn": "Number", "summarizeBy": "none" },
+          { "name": "Title", "dataType": "string", "sourceColumn": "Title", "summarizeBy": "none" },
+          { "name": "State", "dataType": "string", "sourceColumn": "State", "summarizeBy": "none" },
+          { "name": "CreatedAt", "dataType": "dateTime", "sourceColumn": "CreatedAt", "summarizeBy": "none" },
+          { "name": "UpdatedAt", "dataType": "dateTime", "sourceColumn": "UpdatedAt", "summarizeBy": "none" },
+          { "name": "ClosedAt", "dataType": "dateTime", "sourceColumn": "ClosedAt", "summarizeBy": "none" },
+          { "name": "CreatedDate", "dataType": "dateTime", "sourceColumn": "CreatedDate", "summarizeBy": "none" },
+          { "name": "ClosedDate", "dataType": "dateTime", "sourceColumn": "ClosedDate", "summarizeBy": "none" },
+          { "name": "Author", "dataType": "string", "sourceColumn": "Author", "summarizeBy": "none" },
+          { "name": "AssigneeCount", "dataType": "int64", "sourceColumn": "AssigneeCount", "summarizeBy": "sum" },
+          { "name": "CommentCount", "dataType": "int64", "sourceColumn": "CommentCount", "summarizeBy": "sum" },
+          { "name": "LabelNames", "dataType": "string", "sourceColumn": "LabelNames", "summarizeBy": "none" },
+          { "name": "LabelCount", "dataType": "int64", "sourceColumn": "LabelCount", "summarizeBy": "sum" },
+          { "name": "Severity", "dataType": "string", "sourceColumn": "Severity", "summarizeBy": "none" },
+          { "name": "IsOpen", "dataType": "boolean", "sourceColumn": "IsOpen", "summarizeBy": "none" },
+          { "name": "IsClosed", "dataType": "boolean", "sourceColumn": "IsClosed", "summarizeBy": "none" },
+          { "name": "IsBug", "dataType": "boolean", "sourceColumn": "IsBug", "summarizeBy": "none" },
+          { "name": "IsEnhancement", "dataType": "boolean", "sourceColumn": "IsEnhancement", "summarizeBy": "none" },
+          { "name": "IsDocumentation", "dataType": "boolean", "sourceColumn": "IsDocumentation", "summarizeBy": "none" },
+          { "name": "IsQuestion", "dataType": "boolean", "sourceColumn": "IsQuestion", "summarizeBy": "none" },
+          { "name": "IsUntriaged", "dataType": "boolean", "sourceColumn": "IsUntriaged", "summarizeBy": "none" },
+          { "name": "IsAssigned", "dataType": "boolean", "sourceColumn": "IsAssigned", "summarizeBy": "none" },
+          { "name": "IsStaleOpen", "dataType": "boolean", "sourceColumn": "IsStaleOpen", "summarizeBy": "none" },
+          { "name": "AgeDays", "dataType": "double", "sourceColumn": "AgeDays", "summarizeBy": "average" },
+          { "name": "DaysSinceUpdate", "dataType": "double", "sourceColumn": "DaysSinceUpdate", "summarizeBy": "average" },
+          { "name": "TimeToCloseDays", "dataType": "double", "sourceColumn": "TimeToCloseDays", "summarizeBy": "average" },
+          { "name": "HtmlUrl", "dataType": "string", "sourceColumn": "HtmlUrl", "summarizeBy": "none" }
+        ],
+        "measures": [
+          { "name": "Total Issues", "expression": "COUNTROWS(Issues)", "formatString": "#,0" },
+          { "name": "Open Issues", "expression": "CALCULATE([Total Issues], Issues[IsOpen] = TRUE())", "formatString": "#,0" },
+          { "name": "Closed Issues", "expression": "CALCULATE([Total Issues], Issues[IsClosed] = TRUE())", "formatString": "#,0" },
+          { "name": "Close Rate", "expression": "DIVIDE([Closed Issues], [Total Issues])", "formatString": "0.0%" },
+          { "name": "Bug Issues", "expression": "CALCULATE([Total Issues], Issues[IsBug] = TRUE())", "formatString": "#,0" },
+          { "name": "Open Bugs", "expression": "CALCULATE([Open Issues], Issues[IsBug] = TRUE())", "formatString": "#,0" },
+          { "name": "Bug Share", "expression": "DIVIDE([Bug Issues], [Total Issues])", "formatString": "0.0%" },
+          { "name": "Stale Open Issues", "expression": "CALCULATE([Open Issues], Issues[IsStaleOpen] = TRUE())", "formatString": "#,0" },
+          { "name": "Stale Open Rate", "expression": "DIVIDE([Stale Open Issues], [Open Issues])", "formatString": "0.0%" },
+          { "name": "Untriaged Issues", "expression": "CALCULATE([Total Issues], Issues[IsUntriaged] = TRUE())", "formatString": "#,0" },
+          { "name": "Untriaged Rate", "expression": "DIVIDE([Untriaged Issues], [Total Issues])", "formatString": "0.0%" },
+          { "name": "Assigned Issues", "expression": "CALCULATE([Total Issues], Issues[IsAssigned] = TRUE())", "formatString": "#,0" },
+          { "name": "Assignment Rate", "expression": "DIVIDE([Assigned Issues], [Total Issues])", "formatString": "0.0%" },
+          { "name": "Avg Open Age Days", "expression": "AVERAGEX(FILTER(Issues, Issues[IsOpen] = TRUE()), Issues[AgeDays])", "formatString": "0.0" },
+          { "name": "Avg Time To Close Days", "expression": "AVERAGEX(FILTER(Issues, NOT ISBLANK(Issues[TimeToCloseDays])), Issues[TimeToCloseDays])", "formatString": "0.0" },
+          { "name": "Median Time To Close Days", "expression": "MEDIANX(FILTER(Issues, NOT ISBLANK(Issues[TimeToCloseDays])), Issues[TimeToCloseDays])", "formatString": "0.0" },
+          { "name": "Quality Risk Score", "expression": "VAR OpenBugRate = DIVIDE([Open Bugs], [Open Issues], 0)\nVAR StaleRate = DIVIDE([Stale Open Issues], [Open Issues], 0)\nVAR TriageRate = [Untriaged Rate]\nVAR NotClosedRate = 1 - [Close Rate]\nRETURN ROUND(100 * ((0.35 * OpenBugRate) + (0.25 * StaleRate) + (0.20 * TriageRate) + (0.20 * NotClosedRate)), 1)", "formatString": "0.0" }
+        ],
+        "partitions": [
+          {
+            "name": "Issues",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Owner = GitHubOwner,",
+                "    Repo = GitHubRepo,",
+                "    PageSize = Number.ToText(GitHubPageSize),",
+                "    MaxPages = GitHubMaxPages,",
+                "    StaleDays = StaleIssueDays,",
+                "    Headers = GitHubRequestHeaders,",
+                "    GetPage = (page as number) as list =>",
+                "        Json.Document(",
+                "            Web.Contents(",
+                "                \"https://api.github.com\",",
+                "                [",
+                "                    RelativePath = \"repos/\" & Owner & \"/\" & Repo & \"/issues\",",
+                "                    Query = [state = \"all\", per_page = PageSize, page = Number.ToText(page)],",
+                "                    Headers = Headers",
+                "                ]",
+                "            )",
+                "        ),",
+                "    Pages = List.Generate(",
+                "        () => [Page = 1, Items = GetPage(1)],",
+                "        each List.Count([Items]) > 0 and [Page] <= MaxPages,",
+                "        each [Page = [Page] + 1, Items = GetPage([Page] + 1)],",
+                "        each [Items]",
+                "    ),",
+                "    Records = List.Select(List.Combine(Pages), each not Record.HasFields(_, \"pull_request\")),",
+                "    Source = Table.FromRecords(Records),",
+                "    KeepColumns = Table.SelectColumns(Source, {\"number\", \"title\", \"state\", \"created_at\", \"updated_at\", \"closed_at\", \"user\", \"assignees\", \"comments\", \"labels\", \"html_url\"}, MissingField.UseNull),",
+                "    AddAuthor = Table.AddColumn(KeepColumns, \"Author\", each try [user][login] otherwise null, type text),",
+                "    AddAssigneeCount = Table.AddColumn(AddAuthor, \"AssigneeCount\", each if [assignees] = null then 0 else List.Count([assignees]), Int64.Type),",
+                "    AddLabelNames = Table.AddColumn(AddAssigneeCount, \"LabelNames\", each if [labels] = null then \"\" else Text.Combine(List.Transform([labels], each Text.Lower(Record.FieldOrDefault(_, \"name\", \"\"))), \", \"), type text),",
+                "    AddLabelCount = Table.AddColumn(AddLabelNames, \"LabelCount\", each if [labels] = null then 0 else List.Count([labels]), Int64.Type),",
+                "    AddCreatedAt = Table.AddColumn(AddLabelCount, \"CreatedAt\", each DateTimeZone.RemoveZone(DateTimeZone.From([created_at])), type datetime),",
+                "    AddUpdatedAt = Table.AddColumn(AddCreatedAt, \"UpdatedAt\", each DateTimeZone.RemoveZone(DateTimeZone.From([updated_at])), type datetime),",
+                "    AddClosedAt = Table.AddColumn(AddUpdatedAt, \"ClosedAt\", each if [closed_at] = null then null else DateTimeZone.RemoveZone(DateTimeZone.From([closed_at])), type nullable datetime),",
+                "    AddCreatedDate = Table.AddColumn(AddClosedAt, \"CreatedDate\", each Date.From([CreatedAt]), type date),",
+                "    AddClosedDate = Table.AddColumn(AddCreatedDate, \"ClosedDate\", each if [ClosedAt] = null then null else Date.From([ClosedAt]), type nullable date),",
+                "    NowUtc = DateTimeZone.RemoveZone(DateTimeZone.UtcNow()),",
+                "    AddIsOpen = Table.AddColumn(AddClosedDate, \"IsOpen\", each [state] = \"open\", type logical),",
+                "    AddIsClosed = Table.AddColumn(AddIsOpen, \"IsClosed\", each [state] = \"closed\", type logical),",
+                "    AddIsBug = Table.AddColumn(AddIsClosed, \"IsBug\", each Text.Contains([LabelNames], \"bug\") or Text.Contains([LabelNames], \"defect\"), type logical),",
+                "    AddIsEnhancement = Table.AddColumn(AddIsBug, \"IsEnhancement\", each Text.Contains([LabelNames], \"enhancement\") or Text.Contains([LabelNames], \"feature\"), type logical),",
+                "    AddIsDocumentation = Table.AddColumn(AddIsEnhancement, \"IsDocumentation\", each Text.Contains([LabelNames], \"documentation\") or Text.Contains([LabelNames], \"docs\"), type logical),",
+                "    AddIsQuestion = Table.AddColumn(AddIsDocumentation, \"IsQuestion\", each Text.Contains([LabelNames], \"question\") or Text.Contains([LabelNames], \"support\"), type logical),",
+                "    AddIsUntriaged = Table.AddColumn(AddIsQuestion, \"IsUntriaged\", each [LabelCount] = 0 or Text.Contains([LabelNames], \"needs triage\") or Text.Contains([LabelNames], \"untriaged\"), type logical),",
+                "    AddIsAssigned = Table.AddColumn(AddIsUntriaged, \"IsAssigned\", each [AssigneeCount] > 0, type logical),",
+                "    AddAgeDays = Table.AddColumn(AddIsAssigned, \"AgeDays\", each Duration.TotalDays(NowUtc - [CreatedAt]), type number),",
+                "    AddDaysSinceUpdate = Table.AddColumn(AddAgeDays, \"DaysSinceUpdate\", each Duration.TotalDays(NowUtc - [UpdatedAt]), type number),",
+                "    AddTimeToCloseDays = Table.AddColumn(AddDaysSinceUpdate, \"TimeToCloseDays\", each if [ClosedAt] = null then null else Duration.TotalDays([ClosedAt] - [CreatedAt]), type nullable number),",
+                "    AddIsStaleOpen = Table.AddColumn(AddTimeToCloseDays, \"IsStaleOpen\", each [IsOpen] and [DaysSinceUpdate] >= StaleDays, type logical),",
+                "    AddSeverity = Table.AddColumn(AddIsStaleOpen, \"Severity\", each if Text.Contains([LabelNames], \"critical\") or Text.Contains([LabelNames], \"p0\") then \"Critical\" else if Text.Contains([LabelNames], \"high\") or Text.Contains([LabelNames], \"p1\") then \"High\" else if Text.Contains([LabelNames], \"medium\") or Text.Contains([LabelNames], \"p2\") then \"Medium\" else if Text.Contains([LabelNames], \"low\") or Text.Contains([LabelNames], \"p3\") then \"Low\" else \"Unspecified\", type text),",
+                "    RenameColumns = Table.RenameColumns(AddSeverity, {{\"number\", \"Number\"}, {\"title\", \"Title\"}, {\"state\", \"State\"}, {\"comments\", \"CommentCount\"}, {\"html_url\", \"HtmlUrl\"}}),",
+                "    SelectFinal = Table.SelectColumns(RenameColumns, {\"Number\", \"Title\", \"State\", \"CreatedAt\", \"UpdatedAt\", \"ClosedAt\", \"CreatedDate\", \"ClosedDate\", \"Author\", \"AssigneeCount\", \"CommentCount\", \"LabelNames\", \"LabelCount\", \"Severity\", \"IsOpen\", \"IsClosed\", \"IsBug\", \"IsEnhancement\", \"IsDocumentation\", \"IsQuestion\", \"IsUntriaged\", \"IsAssigned\", \"IsStaleOpen\", \"AgeDays\", \"DaysSinceUpdate\", \"TimeToCloseDays\", \"HtmlUrl\"})",
+                "in",
+                "    SelectFinal"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Calendar",
+        "columns": [
+          { "name": "Date", "dataType": "dateTime", "sourceColumn": "Date", "summarizeBy": "none" },
+          { "name": "Year", "dataType": "int64", "sourceColumn": "Year", "summarizeBy": "none" },
+          { "name": "Month", "dataType": "int64", "sourceColumn": "Month", "summarizeBy": "none" },
+          { "name": "MonthName", "dataType": "string", "sourceColumn": "MonthName", "summarizeBy": "none" },
+          { "name": "YearMonth", "dataType": "string", "sourceColumn": "YearMonth", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "Calendar",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Today = Date.From(DateTimeZone.UtcNow()),",
+                "    MinDate = #date(2020, 1, 1),",
+                "    MaxDate = Date.AddYears(Today, 1),",
+                "    Dates = List.Dates(MinDate, Duration.Days(MaxDate - MinDate) + 1, #duration(1, 0, 0, 0)),",
+                "    Source = Table.FromList(Dates, Splitter.SplitByNothing(), {\"Date\"}),",
+                "    AddYear = Table.AddColumn(Source, \"Year\", each Date.Year([Date]), Int64.Type),",
+                "    AddMonth = Table.AddColumn(AddYear, \"Month\", each Date.Month([Date]), Int64.Type),",
+                "    AddMonthName = Table.AddColumn(AddMonth, \"MonthName\", each Date.MonthName([Date]), type text),",
+                "    AddYearMonth = Table.AddColumn(AddMonthName, \"YearMonth\", each Date.ToText([Date], \"yyyy-MM\"), type text)",
+                "in",
+                "    AddYearMonth"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "LabelSummary",
+        "columns": [
+          { "name": "Label", "dataType": "string", "sourceColumn": "Label", "summarizeBy": "none" },
+          { "name": "Issue Count", "dataType": "int64", "sourceColumn": "Issue Count", "summarizeBy": "sum" },
+          { "name": "Open Count", "dataType": "int64", "sourceColumn": "Open Count", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "LabelSummary",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Keep = Table.SelectColumns(Issues, {\"Number\", \"State\", \"LabelNames\"}),",
+                "    Split = Table.ExpandListColumn(Table.TransformColumns(Keep, {{\"LabelNames\", Splitter.SplitTextByDelimiter(\", \", QuoteStyle.Csv), type list}}), \"LabelNames\"),",
+                "    Rename = Table.RenameColumns(Split, {{\"LabelNames\", \"Label\"}}),",
+                "    Filter = Table.SelectRows(Rename, each [Label] <> null and [Label] <> \"\"),",
+                "    Group = Table.Group(Filter, {\"Label\"}, {{\"Issue Count\", each Table.RowCount(_), Int64.Type}, {\"Open Count\", each Table.RowCount(Table.SelectRows(_, each [State] = \"open\")), Int64.Type}})",
+                "in",
+                "    Group"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "Issues_CreatedDate_Calendar_Date",
+        "fromTable": "Issues",
+        "fromColumn": "CreatedDate",
+        "toTable": "Calendar",
+        "toColumn": "Date"
+      }
+    ]
+  }
+}
