@@ -11,6 +11,8 @@ DuckHex::HexViewer::HexViewer()
 	mShouldResetScroll(false), mSelection(), mUndoManager(),
 	mbIsSelecting(false), mSelectionAnchorOffset(0), mEditBuffer{},
 	mbShouldOpenEditPopup(false), mbShouldFocusEditInput(false), mEditError(),
+	mSearchBuffer{}, mSearchPatternLength(0), mSearchResults(), mCurrentSearchResultIndex(0),
+	mbShouldFocusSearchInput(false), mbShouldScrollToSelection(false), mSearchError(),
 	mWindowWidth(0), mWindowHeight(0)
 {
 }
@@ -21,6 +23,8 @@ DuckHex::HexViewer::HexViewer(BinaryDocument* document)
 	mShouldResetScroll(false), mSelection(), mUndoManager(),
 	mbIsSelecting(false), mSelectionAnchorOffset(0), mEditBuffer{},
 	mbShouldOpenEditPopup(false), mbShouldFocusEditInput(false), mEditError(),
+	mSearchBuffer{}, mSearchPatternLength(0), mSearchResults(), mCurrentSearchResultIndex(0),
+	mbShouldFocusSearchInput(false), mbShouldScrollToSelection(false), mSearchError(),
 	mWindowWidth(0), mWindowHeight(0)
 {
 }
@@ -53,6 +57,13 @@ bool DuckHex::HexViewer::LoadDocument(BinaryDocument* document)
 	mbShouldOpenEditPopup = false;
 	mbShouldFocusEditInput = false;
 	mEditError.clear();
+	mSearchBuffer[0] = '\0';
+	mSearchPatternLength = 0;
+	mSearchResults.clear();
+	mCurrentSearchResultIndex = 0;
+	mbShouldFocusSearchInput = false;
+	mbShouldScrollToSelection = false;
+	mSearchError.clear();
 	return true;
 }
 
@@ -73,6 +84,13 @@ void DuckHex::HexViewer::UnloadDocument()
 	mbShouldOpenEditPopup = false;
 	mbShouldFocusEditInput = false;
 	mEditError.clear();
+	mSearchBuffer[0] = '\0';
+	mSearchPatternLength = 0;
+	mSearchResults.clear();
+	mCurrentSearchResultIndex = 0;
+	mbShouldFocusSearchInput = false;
+	mbShouldScrollToSelection = false;
+	mSearchError.clear();
 }
 
 bool DuckHex::HexViewer::SetCurrentSeekPosition(uint64_t position)
@@ -253,12 +271,17 @@ bool DuckHex::HexViewer::parseHexBytes(
 
 void DuckHex::HexViewer::handleKeyboardInput()
 {
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F))
+	{
+		mbShouldFocusSearchInput = true;
+	}
+
 	if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 	{
 		return;
 	}
-
-	ImGuiIO& io = ImGui::GetIO();
 
 	if (io.KeyCtrl &&
 		ImGui::IsKeyPressed(ImGuiKey_Z))
@@ -363,6 +386,133 @@ void DuckHex::HexViewer::renderEditPopup()
 	ImGui::EndPopup();
 }
 
+void DuckHex::HexViewer::renderSearchPanel()
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F))
+	{
+		mbShouldFocusSearchInput = true;
+	}
+
+	ImGui::Begin("Search");
+
+	if (mbShouldFocusSearchInput)
+	{
+		ImGui::SetKeyboardFocusHere();
+		mbShouldFocusSearchInput = false;
+	}
+
+	const bool bSearchSubmitted =
+		ImGui::InputText(
+			"Pattern",
+			mSearchBuffer,
+			sizeof(mSearchBuffer),
+			ImGuiInputTextFlags_CharsHexadecimal |
+			ImGuiInputTextFlags_CharsUppercase |
+			ImGuiInputTextFlags_EnterReturnsTrue);
+
+	if (ImGui::Button("Find") || bSearchSubmitted)
+	{
+		searchBytePattern();
+	}
+
+	if (!mSearchError.empty())
+	{
+		ImGui::TextColored(
+			ImVec4(0.80f, 0.10f, 0.10f, 1.0f),
+			"%s",
+			mSearchError.c_str());
+	}
+
+	if (!mSearchResults.empty())
+	{
+		ImGui::Text(
+			"Found: %llu",
+			static_cast<unsigned long long>(mSearchResults.size()));
+
+		if (ImGui::Button("Previous"))
+		{
+			if (mCurrentSearchResultIndex == 0)
+			{
+				mCurrentSearchResultIndex = mSearchResults.size() - 1;
+			}
+			else
+			{
+				--mCurrentSearchResultIndex;
+			}
+
+			selectSearchResult(mCurrentSearchResultIndex);
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Next"))
+		{
+			mCurrentSearchResultIndex =
+				(mCurrentSearchResultIndex + 1) % mSearchResults.size();
+			selectSearchResult(mCurrentSearchResultIndex);
+		}
+
+		const uint64_t selectedOffset =
+			mSearchResults[mCurrentSearchResultIndex];
+
+		ImGui::Text(
+			"Offset: %08llX",
+			static_cast<unsigned long long>(selectedOffset));
+	}
+
+	ImGui::End();
+}
+
+void DuckHex::HexViewer::searchBytePattern()
+{
+	std::vector<uint8_t> pattern;
+
+	if (!parseHexBytes(mSearchBuffer, &pattern))
+	{
+		mSearchResults.clear();
+		mSearchError = "Enter an even number of hexadecimal digits.";
+		return;
+	}
+
+	if (mDocument == nullptr)
+	{
+		mSearchResults.clear();
+		mSearchError = "No document is loaded.";
+		return;
+	}
+
+	mSearchResults = mDocument->FindBytePattern(pattern);
+	mSearchPatternLength = pattern.size();
+	mCurrentSearchResultIndex = 0;
+	mSearchError.clear();
+
+	if (mSearchResults.empty())
+	{
+		mSearchError = "Pattern not found.";
+		return;
+	}
+
+	selectSearchResult(0);
+}
+
+void DuckHex::HexViewer::selectSearchResult(std::size_t resultIndex)
+{
+	if (resultIndex >= mSearchResults.size())
+	{
+		return;
+	}
+
+	const uint64_t offset = mSearchResults[resultIndex];
+
+	mSelection.SetRange(
+		offset,
+		offset + static_cast<uint64_t>(mSearchPatternLength));
+	mCurrentSearchResultIndex = resultIndex;
+	mbShouldScrollToSelection = true;
+}
+
 bool DuckHex::HexViewer::replaceSelection(const std::vector<uint8_t>& newData)
 {
 	if (mDocument == nullptr ||
@@ -455,6 +605,7 @@ void DuckHex::HexViewer::Render()
 
 	if (mDocument == nullptr)
 	{
+		renderSearchPanel();
 		return;
 	}
 
@@ -465,12 +616,6 @@ void DuckHex::HexViewer::Render()
 
 	bool bScrollWasReset = false;
 
-	if (mShouldResetScroll)
-	{
-		ImGui::SetScrollY(0.0f);
-		mShouldResetScroll = false;
-		bScrollWasReset = true;
-	}
 
 	#pragma endregion
 
@@ -480,6 +625,7 @@ void DuckHex::HexViewer::Render()
 	{
 		ImGui::End();
 		ImGui::PopStyleColor();
+		renderSearchPanel();
 		return;
 	}
 
@@ -514,9 +660,31 @@ void DuckHex::HexViewer::Render()
 
 	#pragma region Scroll and Visible Data
 
+	ImGui::BeginChild(
+		"HexData",
+		ImVec2(0.0f, 0.0f),
+		false,
+		ImGuiWindowFlags_HorizontalScrollbar);
+
+	if (mShouldResetScroll)
+	{
+		ImGui::SetScrollY(0.0f);
+		mShouldResetScroll = false;
+		bScrollWasReset = true;
+	}
+
 	const float lineHeight = ImGui::GetTextLineHeight();
 	const ImVec2 availableRegion = ImGui::GetContentRegionAvail();
 	const float availableHeight = availableRegion.y;
+
+	if (mbShouldScrollToSelection)
+	{
+		const uint64_t selectionLine =
+			mSelection.Begin() / mCurrentBytesPerLine;
+		ImGui::SetScrollY(static_cast<float>(selectionLine) * lineHeight);
+		mbShouldScrollToSelection = false;
+	}
+
 	const float scrollY = bScrollWasReset ? 0.0f : ImGui::GetScrollY();
 	const uint64_t visibleLineCount = std::max<uint64_t>(1, static_cast<uint64_t>(availableHeight / lineHeight) + 1);
 
@@ -535,8 +703,10 @@ void DuckHex::HexViewer::Render()
 
 	if (data.empty())
 	{
+		ImGui::EndChild();
 		ImGui::End();
 		ImGui::PopStyleColor();
+		renderSearchPanel();
 		return;
 	}
 
@@ -546,7 +716,10 @@ void DuckHex::HexViewer::Render()
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-	const ImVec2 startPosition = ImGui::GetCursorScreenPos();
+	const ImVec2 cursorScreenPosition = ImGui::GetCursorScreenPos();
+	const ImVec2 startPosition(
+		cursorScreenPosition.x,
+		cursorScreenPosition.y + static_cast<float>(firstVisibleLine) * lineHeight);
 	const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
 	const ImU32 selectedBackgroundColor =
 		ImGui::GetColorU32(ImVec4(0.22f, 0.42f, 0.80f, 0.35f));
@@ -728,10 +901,14 @@ void DuckHex::HexViewer::Render()
 			availableRegion.x,
 			totalContentHeight));
 
+	ImGui::EndChild();
+
 	renderEditPopup();
 
 	ImGui::End();
 	ImGui::PopStyleColor();
+
+	renderSearchPanel();
 
 	#pragma endregion
 }

@@ -32,6 +32,13 @@ namespace DuckHex
 		bool mbShouldOpenEditPopup;
 		bool mbShouldFocusEditInput;
 		std::string mEditError;
+		char mSearchBuffer[512];
+		std::size_t mSearchPatternLength;
+		std::vector<uint64_t> mSearchResults;
+		std::size_t mCurrentSearchResultIndex;
+		bool mbShouldFocusSearchInput;
+		bool mbShouldScrollToSelection;
+		std::string mSearchError;
 
 		static const uint32_t DEFAULT_BYTES_PER_LINE = 16;
 		static const uint32_t DEFAULT_FONT_SIZE = 10;
@@ -52,6 +59,9 @@ namespace DuckHex
 		void handleKeyboardInput();
 		void openEditPopup();
 		void renderEditPopup();
+		void renderSearchPanel();
+		void searchBytePattern();
+		void selectSearchResult(std::size_t resultIndex);
 		bool replaceSelection(const std::vector<uint8_t>& newData);
 		void applyUndoAction(const UndoManager::UndoAction& action, bool bUseNewData);
 		void undo();

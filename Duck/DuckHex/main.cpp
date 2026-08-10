@@ -37,6 +37,7 @@ namespace // static 처럼 접근 권한을 이 파일로 한정하기 위한 �
 
 	DuckHex::HexViewer* gHexViewer = nullptr;
 	DuckHex::BinaryDocument* gBinaryDocument = nullptr;
+	ImGuiID gSearchDockId = 0;
 
 	bool CreateDuckHexResource()
 	{
@@ -322,6 +323,13 @@ namespace
 		DrawMenuWindow();
 
 		// 아직 구현 전이라면 일단 빈 창이라도 만들어야 함
+		if (gSearchDockId != 0)
+		{
+			ImGui::SetNextWindowDockID(
+				 gSearchDockId,
+			ImGuiCond_FirstUseEver);
+		}
+
 		gHexViewer->Render();
 	}
 
@@ -613,6 +621,8 @@ namespace
 			nullptr,
 			&rightDockId
 		);
+
+		gSearchDockId = rightDockId;
 
 		// 남아 있는 mainDockId가 중앙 영역
 		const ImGuiID centerDockId = mainDockId;
