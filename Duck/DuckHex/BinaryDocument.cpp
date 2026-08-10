@@ -2,7 +2,7 @@
 #include "BinaryDocument.h"
 
 DuckHex::BinaryDocument::BinaryDocument()
-	: mFileStream(), mDataByOffset(4096, 0), mFileSize(0)
+	: mFileStream(), mFileSize(0)
 {}
 
 DuckHex::BinaryDocument::~BinaryDocument()
@@ -43,8 +43,6 @@ void DuckHex::BinaryDocument::Unload()
 	{
 		mFileStream.close();
 	}
-
-	mDataByOffset = vector<uint8_t>(4096);
 }
 
 vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size)
@@ -79,6 +77,87 @@ vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint6
 		static_cast<size_t>(mFileStream.gcount()));
 
 	return result;
+}
+
+vector<uint64_t> DuckHex::BinaryDocument::FindBytePattern(const vector<uint8_t>& pattern)
+{
+	vector<uint64_t> result;
+
+	if (!mFileStream.is_open() || pattern.empty() || pattern.size() > mFileSize)
+	{
+		return result;
+	}
+
+	const vector<uint8_t> fileData = GetDataBySeekPositionOrNull(0, mFileSize);
+	const size_t patternSize = pattern.size();
+
+	if (fileData.size() < patternSize)
+	{
+		return result;
+	}
+
+	const size_t searchEnd = fileData.size() - patternSize;
+
+	for (size_t offset = 0; offset <= searchEnd; ++offset)
+	{
+		if (std::equal(pattern.begin(), pattern.end(), fileData.begin() + offset))
+		{
+			result.push_back(static_cast<uint64_t>(offset));
+		}
+	}
+
+	return result;
+}
+
+bool DuckHex::BinaryDocument::FindFirstBytePattern(const vector<uint8_t>& pattern, uint64_t* outOffset)
+{
+	if (outOffset == nullptr)
+	{
+		return false;
+	}
+
+	const vector<uint64_t> offsets = FindBytePattern(pattern);
+
+	if (offsets.empty())
+	{
+		return false;
+	}
+
+	*outOffset = offsets.front();
+	return true;
+}
+
+bool DuckHex::BinaryDocument::OverwriteData(uint64_t offset, const vector<uint8_t>& data)
+{
+	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
+
+	if (data.empty())
+	{
+		return false;
+	}
+
+	if (offset >= mFileSize)
+	{
+		return false;
+	}
+
+	if (static_cast<uint64_t>(data.size()) > mFileSize - offset)
+	{
+		return false;
+	}
+
+	mFileStream.clear();
+	mFileStream.seekp(
+		static_cast<std::streamoff>(offset),
+		std::ios::beg);
+
+	mFileStream.write(
+		reinterpret_cast<const char*>(data.data()),
+		static_cast<std::streamsize>(data.size()));
+
+	mFileStream.flush();
+
+	return !mFileStream.fail();
 }
 
 uint64_t DuckHex::BinaryDocument::GetSize() const
