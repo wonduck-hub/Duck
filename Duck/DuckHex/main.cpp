@@ -26,6 +26,7 @@ namespace // static 처럼 접근 권한을 이 파일로 한정하기 위한 �
 
 	void DrawMainUI();
 	void DrawMenuWindow();
+	bool SaveCurrentDocument();
 
 	LRESULT CALLBACK WindowProcedure(
 		HWND windowHandle,
@@ -373,10 +374,13 @@ namespace
 
 		ImGui::SameLine();
 
-		if (ImGui::Button("Save"))
+		ImGuiIO& io = ImGui::GetIO();
+		const bool bSaveShortcutPressed =
+			io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S);
+
+		if (ImGui::Button("Save") || bSaveShortcutPressed)
 		{
-			// TODO:
-			// 현재 문서 저장
+			SaveCurrentDocument();
 		}
 
 		ImGui::SameLine();
@@ -388,6 +392,37 @@ namespace
 		}
 
 		ImGui::End();
+	}
+
+	bool SaveCurrentDocument()
+	{
+		if (gBinaryDocument == nullptr ||
+			gHexViewer == nullptr ||
+			!gHexViewer->HasDocument())
+		{
+			return false;
+		}
+
+		OPENFILENAMEW fileDialog{};
+		wchar_t filePath[MAX_PATH]{};
+
+		fileDialog.lStructSize = sizeof(fileDialog);
+		fileDialog.lpstrFile = filePath;
+		fileDialog.nMaxFile = MAX_PATH;
+		fileDialog.lpstrFilter =
+			L"All Files\0*.*\0"
+			L"Binary Files\0*.bin\0\0";
+		fileDialog.lpstrDefExt = L"bin";
+		fileDialog.Flags =
+			OFN_OVERWRITEPROMPT |
+			OFN_PATHMUSTEXIST;
+
+		if (!GetSaveFileNameW(&fileDialog))
+		{
+			return false;
+		}
+
+		return gBinaryDocument->SaveFileAs(filePath);
 	}
 
 	bool CreateD3DDevice(HWND windowHandle)

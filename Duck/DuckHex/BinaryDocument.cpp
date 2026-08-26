@@ -2,7 +2,7 @@
 #include "BinaryDocument.h"
 
 DuckHex::BinaryDocument::BinaryDocument()
-	: mFileStream(), mFileSize(0)
+	: mFileStream(), mFilePath(), mFileSize(0)
 {}
 
 DuckHex::BinaryDocument::~BinaryDocument()
@@ -24,6 +24,8 @@ bool DuckHex::BinaryDocument::LoadFile(const filesystem::path& filePath)
 		return false;
 	}
 
+	mFilePath = filePath;
+
 	const std::streampos currentPosition = mFileStream.tellg();
 
 	mFileStream.seekg(0, std::ios::end);
@@ -37,12 +39,69 @@ bool DuckHex::BinaryDocument::LoadFile(const filesystem::path& filePath)
 	return true;
 }
 
+bool DuckHex::BinaryDocument::SaveFileAs(const filesystem::path& filePath)
+{
+	assert(mFileStream.is_open() && "File stream is not open. Please load a file first.");
+
+	if (filePath.empty())
+	{
+		return false;
+	}
+
+	mFileStream.flush();
+
+	if (mFilePath == filePath)
+	{
+		return !mFileStream.fail();
+	}
+
+	ofstream outputFileStream(filePath, ios::out | ios::binary | ios::trunc);
+	if (!outputFileStream.is_open())
+	{
+		return false;
+	}
+
+	constexpr size_t COPY_BUFFER_SIZE = 64 * 1024;
+	vector<char> copyBuffer(COPY_BUFFER_SIZE);
+
+	mFileStream.clear();
+	mFileStream.seekg(0, ios::beg);
+
+	while (mFileStream.good())
+	{
+		mFileStream.read(copyBuffer.data(), static_cast<streamsize>(copyBuffer.size()));
+
+		const streamsize readSize = mFileStream.gcount();
+		if (readSize > 0)
+		{
+			outputFileStream.write(copyBuffer.data(), readSize);
+			if (outputFileStream.fail())
+			{
+				return false;
+			}
+		}
+	}
+
+	if (!mFileStream.eof())
+	{
+		return false;
+	}
+
+	mFileStream.clear();
+	outputFileStream.close();
+
+	return LoadFile(filePath);
+}
+
 void DuckHex::BinaryDocument::Unload()
 {
 	if (mFileStream.is_open())
 	{
 		mFileStream.close();
 	}
+
+	mFilePath.clear();
+	mFileSize = 0;
 }
 
 vector<uint8_t> DuckHex::BinaryDocument::GetDataBySeekPositionOrNull(const uint64_t seekPosition, const uint64_t size)

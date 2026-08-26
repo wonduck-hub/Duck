@@ -283,16 +283,16 @@ void DuckHex::HexViewer::handleKeyboardInput()
 		return;
 	}
 
+	if (io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z))
+	{
+		redo();
+		return;
+	}
+
 	if (io.KeyCtrl &&
 		ImGui::IsKeyPressed(ImGuiKey_Z))
 	{
 		undo();
-		return;
-	}
-
-	if (io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z))
-	{
-		redo();
 		return;
 	}
 
