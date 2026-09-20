@@ -13,6 +13,7 @@
     <Project Path="DAI/DAI.csproj" Id="b748c210-d69f-4cf3-9c4b-b5ca194c4ae2" />
     <Project Path="DLogger/DLogger.csproj" />
     <Project Path="DMedia/DMedia.csproj" />
+    <Project Path="DStructLib/DStructLib.vcxproj" Id="985e4cff-a718-4204-b315-5a0079a2ff79" />
     <Project Path="Physics2D/DuckPhysics.csproj" />
   </Folder>
   <Folder Name="/02_Portfolio/">
