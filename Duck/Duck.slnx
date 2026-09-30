@@ -20,6 +20,9 @@
     <Project Path="DHexEditor/DHexEditor.vcxproj" Id="1e53969f-c709-477b-938f-7f068fc83bc2">
       <Deploy />
     </Project>
+    <Project Path="DuckChatClient/DuckChatClient.vcxproj" Id="83cc9df9-816f-4667-b9e6-1b991a4c8964">
+      <Platform Solution="*|ARM64" Project="x64" />
+    </Project>
     <Project Path="DuckChatServer/DuckChatServer.vcxproj" Id="131a8dad-0b7b-40a7-8ac8-c036612a83ca" />
     <Project Path="DuckHex/DuckHex.vcxproj" Id="9c2ebf12-05eb-4a59-bc58-25b58ebe31d2" />
     <Project Path="TestPhysics2D/WatermelonGameWindows.csproj" />
