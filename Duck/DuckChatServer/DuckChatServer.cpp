@@ -7,108 +7,113 @@
 
 #pragma comment(lib, "Ws2_32.lib") // winsock 관련 해더를 가져올 때 VS에서 따로 설정 없이 코드 상으로 링크해야 하는 lib 파일을 설정하는 전처리문
 
+import TcpServer;
+
 using namespace std;
 
 int main()
 {
-    WSADATA wsaData;
+	TcpServer server;
+	server.startServer();
 
-    int errResult;
+	//WSADATA wsaData;
 
-    errResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (errResult != 0) 
-    {
-        cout << "WSAStartup failed: " << errResult << endl;
-        return 1;
-    }
+	//int errResult;
 
-    // 주소 및 연결 설정
-    const char* DEFAULT_PORT = "27015";
+	//errResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	//if (errResult != 0)
+	//{
+	//	cout << "WSAStartup failed: " << errResult << endl;
+	//	return 1;
+	//}
 
-    struct addrinfo* result = nullptr;
-    struct addrinfo hints;
+	//// 주소 및 연결 설정
+	//const char* DEFAULT_PORT = "27015";
 
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-    hints.ai_flags = AI_PASSIVE;
+	//struct addrinfo* result = nullptr;
+	//struct addrinfo hints;
 
-    // hints와 result는 각각 입력용 구조체와 실제 개체를 저장하는 개체이미지 타입이 같음(C 스타일 코드에서 종종 보임)
-    errResult = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &result);
-    if (errResult != 0)
-    {
-        cout << "getaddrinfo failed: " << errResult << endl;
-        WSACleanup();
-        return 1;
-    }
+	//ZeroMemory(&hints, sizeof(hints));
+	//hints.ai_family = AF_INET;
+	//hints.ai_socktype = SOCK_STREAM;
+	//hints.ai_protocol = IPPROTO_TCP;
+	//hints.ai_flags = AI_PASSIVE;
 
-    SOCKET listenSocket = INVALID_SOCKET;
+	//// hints와 result는 각각 입력용 구조체와 실제 개체를 저장하는 개체이미지 타입이 같음(C 스타일 코드에서 종종 보임)
+	//errResult = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &result);
+	//if (errResult != 0)
+	//{
+	//	cout << "getaddrinfo failed: " << errResult << endl;
+	//	WSACleanup();
+	//	return 1;
+	//}
 
-    // Create a SOCKET for the server to listen for client connections
-    listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	//SOCKET listenSocket = INVALID_SOCKET;
 
-    if (listenSocket == INVALID_SOCKET)
-    {
-        cout << "Error at socket(): " << WSAGetLastError() << endl;
-        freeaddrinfo(result);
-        WSACleanup();
-        return 1;
-    }
+	//// Create a SOCKET for the server to listen for client connections
+	//listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
-    // Setup the TCP listening socket
-    errResult = bind(listenSocket, result->ai_addr, result->ai_addrlen);
-    if (errResult == SOCKET_ERROR)
-    {
-        printf("bind failed with error: %d\n", WSAGetLastError());
-        freeaddrinfo(result);
-        closesocket(listenSocket);
-        WSACleanup();
-        return 1;
-    }
+	//if (listenSocket == INVALID_SOCKET)
+	//{
+	//	cout << "Error at socket(): " << WSAGetLastError() << endl;
+	//	freeaddrinfo(result);
+	//	WSACleanup();
+	//	return 1;
+	//}
 
-    // 소켓 수신 대기
-    // while 문에서 반복해서 호출하는 것이 아닌 listenSocket을 연결을 받을 준비가 된 상태로 전환하는 것
-    if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
-    {
-        printf("Listen failed with error: %ld\n", WSAGetLastError());
-        closesocket(listenSocket);
-        WSACleanup();
-        return 1;
-    }
+	//// Setup the TCP listening socket
+	//errResult = bind(listenSocket, result->ai_addr, result->ai_addrlen);
+	//if (errResult == SOCKET_ERROR)
+	//{
+	//	printf("bind failed with error: %d\n", WSAGetLastError());
+	//	freeaddrinfo(result);
+	//	closesocket(listenSocket);
+	//	WSACleanup();
+	//	return 1;
+	//}
 
-    // 소켓 연결을 하려면 SOCKET 개체로 clientSocket을 받아야 함
-    // 연결할 클라이언트의 소켓을 코기화
-    SOCKET clientSocket = INVALID_SOCKET;
+	//// 소켓 수신 대기
+	//// while 문에서 반복해서 호출하는 것이 아닌 listenSocket을 연결을 받을 준비가 된 상태로 전환하는 것
+	//if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
+	//{
+	//	printf("Listen failed with error: %ld\n", WSAGetLastError());
+	//	closesocket(listenSocket);
+	//	WSACleanup();
+	//	return 1;
+	//}
 
-    clientSocket = accept(listenSocket, nullptr, nullptr);
-    if (clientSocket == INVALID_SOCKET)
-    {
-        cout << "Accept error: " << WSAGetLastError() << endl;
-        closesocket(listenSocket);
-        WSACleanup();
-        return 1;
-    }
+	//// 소켓 연결을 하려면 SOCKET 개체로 clientSocket을 받아야 함
+	//// 연결할 클라이언트의 소켓을 코기화
+	//SOCKET clientSocket = INVALID_SOCKET;
 
-    // 소켓 송수신 로직
-    const size_t DEFAULT_BUFFER_SIZE = 512;
-    char recvBuffer[DEFAULT_BUFFER_SIZE];
-    int recvBufferLen = DEFAULT_BUFFER_SIZE;
+	//clientSocket = accept(listenSocket, nullptr, nullptr);
+	//if (clientSocket == INVALID_SOCKET)
+	//{
+	//	cout << "Accept error: " << WSAGetLastError() << endl;
+	//	closesocket(listenSocket);
+	//	WSACleanup();
+	//	return 1;
+	//}
 
-    while (true)
-    {
-        errResult = recv(clientSocket, recvBuffer, recvBufferLen, 0);
-        if (errResult > 0)
-        {
-            cout << "Bytes received: " << recvBuffer << endl;
-        }
-        else
-        {
-            return 1;
-        }
-    }
+	//// 소켓 송수신 로직
+	//const size_t DEFAULT_BUFFER_SIZE = 512;
+	//char recvBuffer[DEFAULT_BUFFER_SIZE];
+	//int recvBufferLen = DEFAULT_BUFFER_SIZE;
 
-    return 0;
+	//while (true)
+	//{
+	//	errResult = recv(clientSocket, recvBuffer, recvBufferLen, 0);
+	//	if (errResult > 0)
+	//	{
+	//		cout << "Bytes received: " << recvBuffer << endl;
+	//	}
+	//	else
+	//	{
+	//		return 1;
+	//	}
+	//}
+
+	return 0;
 }
 
 // 프로그램 실행: Ctrl+F5 또는 디버그 > 디버깅하지 않고 시작 메뉴

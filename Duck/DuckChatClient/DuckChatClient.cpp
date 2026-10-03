@@ -61,7 +61,6 @@ int main()
 	// 소켓 송수신 로직
 	const size_t DEFAULT_BUFFER_SIZE = 512;
 	const char* sendBuffer = "Hello server!";
-	char recvBuffer[DEFAULT_BUFFER_SIZE];
 
 	errResult = send(connectSocket, sendBuffer, (int)strlen(sendBuffer), 0);
 	if (errResult == SOCKET_ERROR)
