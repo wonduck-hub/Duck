@@ -1,0 +1,52 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_size = 4
+tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+#### C# code style ####
+dotnet_sort_system_directives_first = true:error
+dotnet_separate_import_directive_groups = true:error
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
+dotnet_style_predefined_type_for_locals_parameters_members = true:error
+dotnet_style_predefined_type_for_member_access = true:error
+dotnet_style_readonly_field = true:error
+
+#### Naming ####
+dotnet_naming_rule.interface_names_should_be_prefixed_with_i.severity = error
+dotnet_naming_rule.interface_names_should_be_prefixed_with_i.symbols = interface_symbols
+dotnet_naming_rule.interface_names_should_be_prefixed_with_i.style = interface_style
+
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_symbols.interface_symbols.applicable_accessibilities = *
+dotnet_naming_style.interface_style.required_prefix = I
+dotnet_naming_style.interface_style.capitalization = pascal_case
+
+#### Diagnostics ####
+dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0044.severity = error
+dotnet_diagnostic.IDE0055.severity = error
+dotnet_diagnostic.IDE0060.severity = error
+dotnet_diagnostic.IDE1006.severity = error
+dotnet_diagnostic.CS4014.severity = error
+dotnet_diagnostic.CS4013.severity = error
+
+[*.{cpp,h,hpp,cxx,ixx}]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+#### C++ formatting ####
+cpp_indent_braces = allman
+cpp_indent_multi_line_relative_to = innermost_parenthesis
+

@@ -1,10 +1,5 @@
-﻿using DuckPhysics.Physics2D;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.Numerics;
-using System.Text;
+using DuckPhysics.Physics2D;
 
 namespace WatermelonGame
 {

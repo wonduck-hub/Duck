@@ -29,7 +29,7 @@ public:
 	}
 
 	// Getter
-	ECommand GetCommand() 
+	ECommand GetCommand()
 	{
 		return mCommand;
 	}
@@ -54,7 +54,7 @@ public:
 	static constexpr std::uint8_t HEADER[4] = { 0xFF, 0x00, 0xFF, 0x00 };
 	static constexpr std::uint8_t TAIL[4] = { 0x00, 0xFF, 0x00, 0xFF };
 
-	
+
 
 private:
 	ECommand mCommand = ECommand::CHAT;
