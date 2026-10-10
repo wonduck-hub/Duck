@@ -20,6 +20,13 @@
     <Project Path="DHexEditor/DHexEditor.vcxproj" Id="1e53969f-c709-477b-938f-7f068fc83bc2">
       <Deploy />
     </Project>
+    <Project Path="DuckChat/DuckChat.csproj" Id="6d79fd69-d115-4702-a1b2-1af3832075ba">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+      <Deploy />
+    </Project>
     <Project Path="DuckChatClient/DuckChatClient.vcxproj" Id="83cc9df9-816f-4667-b9e6-1b991a4c8964">
       <Platform Solution="*|ARM64" Project="x64" />
     </Project>

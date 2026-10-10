@@ -32,6 +32,7 @@
     <ProjectGuid>{131a8dad-0b7b-40a7-8ac8-c036612a83ca}</ProjectGuid>
     <RootNamespace>DuckChatServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>DuckChatServer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

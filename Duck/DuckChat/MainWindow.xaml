@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="DuckChat.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="DuckChat">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <NavigationView
+        x:Name="ServerNavigationView"
+        PaneDisplayMode="LeftCompact"
+        CompactPaneLength="72"
+        OpenPaneLength="240"
+        IsPaneOpen="False"
+        IsSettingsVisible="False"
+        IsBackButtonVisible="Collapsed"
+        SelectionChanged="serverNavigationView_SelectionChanged">
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Direct Messages" Tag="Direct Messages" Icon="Contact" />
+            <NavigationViewItemSeparator />
+            <NavigationViewItem Content="Server1" Tag="DuckChat Community"  Icon="Message"/>
+            <NavigationViewItem Content="Game Developers" Tag="Game Developers" Icon="Message" />
+            <NavigationViewItem Content="Study Group" Tag="Study Group" Icon="Message" />
+            <NavigationViewItem Content="Friends" Tag="Friends" Icon="Message" />
+        </NavigationView.MenuItems>
+
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem Content="Add a Server" Tag="Add a Server" Icon="Add" />
+        </NavigationView.FooterMenuItems>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" BorderThickness="0,0,0,1">
+                <TextBlock
+                    x:Name="SelectedServerTitle"
+                    Text="Direct Messages"
+                    VerticalAlignment="Center"
+                    Margin="20,0"
+                    FontSize="16"
+                    FontWeight="SemiBold" />
+            </Border>
+
+            <StackPanel
+                Grid.Row="1"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="10">
+                <TextBlock
+                    Text="DuckChat에 오신 것을 환영합니다"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    HorizontalAlignment="Center" />
+                <TextBlock
+                    Text="왼쪽에서 서버를 선택해 대화를 시작하세요."
+                    FontSize="14"
+                    HorizontalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+    </NavigationView>
+</Window>

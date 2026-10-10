@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DuckChat (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DuckChat (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
