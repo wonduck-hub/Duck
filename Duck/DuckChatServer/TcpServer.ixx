@@ -2,7 +2,7 @@ module;
 #include <iostream>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
-#include <EASTL/queue.h>
+#include <queue>
 
 export module TcpServer;
 
@@ -139,5 +139,5 @@ protected:
 private:
 	WSADATA mWsaData;
 	bool mIsRunning = false;
-	eastl::queue<std::uint8_t> mReceiveAccumulator; // 계속 누적해서 쌓아두는 버퍼
+	std::queue<std::uint8_t> mReceiveAccumulator; // 계속 누적해서 쌓아두는 버퍼
 };
