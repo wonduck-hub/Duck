@@ -1,6 +1,6 @@
 module;
 #include <iostream>
-#include <vector>
+#include <EASTL/vector.h>
 
 export module ChatProtocol;
 
@@ -17,7 +17,7 @@ public:
 	ChatProtocal() = delete;
 	virtual ~ChatProtocal() = default;
 
-	ChatProtocal(std::vector<uint8_t> payload, ECommand command) : mPayload(payload), mCommand(command)
+	ChatProtocal(eastl::vector<uint8_t> payload, ECommand command) : mPayload(payload), mCommand(command)
 	{
 		mPayloadLength = mPayload.size();
 		mCheckSum += static_cast<uint8_t>(mCommand);
@@ -37,7 +37,7 @@ public:
 	{
 		return mPayloadLength;
 	}
-	std::vector<uint8_t> GetPayload()
+	eastl::vector<uint8_t> GetPayload()
 	{
 		return mPayload;
 	}
@@ -59,7 +59,7 @@ public:
 private:
 	ECommand mCommand = ECommand::CHAT;
 	std::uint16_t mPayloadLength;
-	std::vector<std::uint8_t> mPayload;
+	eastl::vector<std::uint8_t> mPayload;
 	std::uint8_t mCheckSum = 0;
 
 };

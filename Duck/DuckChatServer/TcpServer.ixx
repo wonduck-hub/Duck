@@ -2,6 +2,7 @@ module;
 #include <iostream>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <EASTL/queue.h>
 
 export module TcpServer;
 
@@ -9,21 +10,27 @@ using namespace std;
 
 export class TcpServer final
 {
+	enum
+	{
+		RECEIVE_ACCUMULATOR_BUFFER = 4096,
+		RECEIVE_BUFFER_SIZE = 1024
+	};
+
 public :
 	TcpServer() = default;
 	virtual ~TcpServer() = default;
 	bool startServer() 
 	{
-		int errResult;
+		int result;
 
-		errResult = WSAStartup(MAKEWORD(2, 2), &mWsaData);
-		if (errResult != 0)
+		result = WSAStartup(MAKEWORD(2, 2), &mWsaData);
+		if (result != 0)
 		{
-			cout << "WSAStartup failed: " << errResult << endl;
+			cout << "WSAStartup failed: " << result << endl;
 			return false;
 		}
 
-		struct addrinfo* result = nullptr;
+		struct addrinfo* addressInfo = nullptr;
 		struct addrinfo hints;
 
 		ZeroMemory(&hints, sizeof(hints));
@@ -33,17 +40,17 @@ public :
 		hints.ai_flags = AI_PASSIVE;
 
 		// hints와 result는 각각 입력용 구조체와 실제 개체, 개체이미지 타입이 같음(C 스타일 코드에서 종종 보임)
-		errResult = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &result);
-		if (errResult != 0)
+		result = getaddrinfo(nullptr, DEFAULT_PORT, &hints, &addressInfo);
+		if (result != 0)
 		{
-			cout << "getaddrinfo failed: " << errResult << endl;
+			cout << "getaddrinfo failed: " << result << endl;
 			WSACleanup();
 			return false;
 		}
 
 		SOCKET listenSocket = INVALID_SOCKET;
 
-		listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+		listenSocket = socket(addressInfo->ai_family, addressInfo->ai_socktype, addressInfo->ai_protocol);
 		if (listenSocket == INVALID_SOCKET)
 		{
 			cout << "socket failed: " << WSAGetLastError() << endl;
@@ -53,8 +60,8 @@ public :
 		}
 
 		// Setup the TCP listening socket
-		errResult = bind(listenSocket, result->ai_addr, (int)result->ai_addrlen);
-		if (errResult != 0)
+		result = bind(listenSocket, addressInfo->ai_addr, (int)addressInfo->ai_addrlen);
+		if (result != 0)
 		{
 			cout << "bind failed: " << WSAGetLastError() << endl;
 			closesocket(listenSocket);
@@ -87,14 +94,21 @@ public :
 		}
 
 		// 소켓 송수신 로직
-		const int recvBufferLen = DEFAULT_BUFFER_SIZE;
-		char recvBuffer[DEFAULT_BUFFER_SIZE];
+		const int recvBufferLen = RECEIVE_BUFFER_SIZE;
+		char recvBuffer[RECEIVE_BUFFER_SIZE];
 
 		while (true)
 		{
-			errResult = recv(clientSocket, recvBuffer, recvBufferLen, 0);
-			if (errResult > 0)
+			result = recv(clientSocket, recvBuffer, recvBufferLen, 0);
+			if (result > 0)
 			{
+				std::uint32_t readSize = result;
+
+				for (int i = 0; i < readSize; ++i)
+				{
+					mReceiveAccumulator.push(static_cast<uint8_t>(recvBuffer[i]));
+				}
+
 				cout << "Bytes received: " << recvBuffer << endl;
 			}
 			else
@@ -105,13 +119,15 @@ public :
 
 		return true;
 	}
+
+	// Getter
 	bool GetIsRunning() const
 	{
 		return mIsRunning;
 	}
 	size_t GetDefaultBufferSize() const
 	{
-		return DEFAULT_BUFFER_SIZE;
+		return RECEIVE_BUFFER_SIZE;
 	}
 	
 
@@ -119,9 +135,9 @@ private:
 
 protected:
 	const char* DEFAULT_PORT = "27015";
-	static const size_t DEFAULT_BUFFER_SIZE = 512;
 
 private:
 	WSADATA mWsaData;
 	bool mIsRunning = false;
+	eastl::queue<std::uint8_t> mReceiveAccumulator; // 계속 누적해서 쌓아두는 버퍼
 };
