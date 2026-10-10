@@ -200,6 +200,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChatProtocol.ixx" />
     <ClCompile Include="DuckChatServer.cpp" />
     <ClCompile Include="TcpServer.ixx" />
   </ItemGroup>

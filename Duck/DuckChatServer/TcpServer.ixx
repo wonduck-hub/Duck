@@ -7,11 +7,11 @@ export module TcpServer;
 
 using namespace std;
 
-export class TcpServer
+export class TcpServer final
 {
 public :
 	TcpServer() = default;
-	~TcpServer() = default;
+	virtual ~TcpServer() = default;
 	bool startServer() 
 	{
 		int errResult;

@@ -21,5 +21,8 @@
     <ClCompile Include="TcpServer.ixx">
       <Filter>헤더 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ChatProtocol.ixx">
+      <Filter>헤더 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
