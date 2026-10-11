@@ -50,21 +50,46 @@
                     FontWeight="SemiBold" />
             </Border>
 
-            <StackPanel
-                Grid.Row="1"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="10">
-                <TextBlock
-                    Text="DuckChat에 오신 것을 환영합니다"
-                    FontSize="24"
-                    FontWeight="SemiBold"
-                    HorizontalAlignment="Center" />
-                <TextBlock
-                    Text="왼쪽에서 서버를 선택해 대화를 시작하세요."
-                    FontSize="14"
-                    HorizontalAlignment="Center" />
-            </StackPanel>
+            <Grid Grid.Row="1" RowSpacing="12" Margin="20,12,20,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <ScrollViewer
+                        x:Name="MessageScrollViewer"
+                        VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="MessageList" Spacing="16" />
+                    </ScrollViewer>
+
+                    <TextBlock
+                        x:Name="EmptyMessageHint"
+                        Text="아직 메시지가 없습니다. 대화를 시작해 보세요."
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Grid>
+
+                <Grid Grid.Row="1" ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox
+                        x:Name="MessageInput"
+                        Grid.Column="0"
+                        PlaceholderText="메시지 입력..."
+                        AcceptsReturn="False"
+                        VerticalContentAlignment="Center"
+                        KeyDown="messageInput_KeyDown" />
+                    <Button
+                        Grid.Column="1"
+                        Content="전송"
+                        Click="sendButton_Click" />
+                </Grid>
+            </Grid>
         </Grid>
     </NavigationView>
 </Window>
