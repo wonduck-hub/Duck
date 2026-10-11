@@ -8,7 +8,7 @@ using namespace std;
 
 namespace Duck
 {
-	enum class ECommand : std::uint8_t
+	export enum class ECommand : std::uint8_t
 	{
 		CHAT = 0x00
 	};

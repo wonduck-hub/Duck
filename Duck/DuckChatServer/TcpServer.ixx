@@ -139,7 +139,7 @@ namespace Duck
 			}
 		}
 
-		bool TryGetPacket(std::vector<std::uint8_t>& outPacket, ECommand& outCommand)
+		bool TryGetPacket(std::vector<std::uint8_t>& outPacket, Duck::ECommand& outCommand)
 		{
 			const size_t bufferSize = mReceiveAccumulatorBuffer.size();
 			if (bufferSize < Duck::ChatProtocol::PACKET_MIN_SIZE)
@@ -199,8 +199,8 @@ namespace Duck
 				{
 					switch (mReceiveAccumulatorBuffer[COMMAND_INDEX])
 					{
-					case static_cast<int>(ECommand::CHAT):
-						outCommand = ECommand::CHAT;
+					case static_cast<int>(Duck::ECommand::CHAT):
+						outCommand = Duck::ECommand::CHAT;
 						break;
 					default:
 						assert(false && "ECommand 처리 누락 또는 잘못된 명령");
