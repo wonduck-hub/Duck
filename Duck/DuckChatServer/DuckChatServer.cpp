@@ -13,7 +13,7 @@ using namespace std;
 
 int main()
 {
-	Duck::TcpServer server;
+	Duck::TcpChatServer server;
 	if (server.startServer() == false)
 	{
 		cout << "Failed to start server." << endl;

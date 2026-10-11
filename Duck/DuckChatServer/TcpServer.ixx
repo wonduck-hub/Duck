@@ -3,6 +3,7 @@ module;
 #include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <queue>
+#include <assert.h>
 
 export module TcpServer;
 
@@ -12,7 +13,7 @@ using namespace std;
 
 namespace Duck
 {
-	export class TcpServer final
+	export class TcpChatServer final
 	{
 		enum
 		{
@@ -21,8 +22,8 @@ namespace Duck
 		};
 
 	public:
-		TcpServer() = default;
-		virtual ~TcpServer() = default;
+		TcpChatServer() = default;
+		virtual ~TcpChatServer() = default;
 		bool startServer()
 		{
 			int result;
@@ -111,7 +112,7 @@ namespace Duck
 
 					for (int i = 0; i < readSize; ++i)
 					{
-						mReceiveAccumulator.push(static_cast<uint8_t>(recvBuffer[i]));
+						mReceiveAccumulatorBuffer.push_back(static_cast<uint8_t>(recvBuffer[i]));
 					}
 
 					cout << "Bytes received: " << recvBuffer << endl;
@@ -132,14 +133,96 @@ namespace Duck
 
 		void ClearReceiveAccumulator()
 		{
-			while (!mReceiveAccumulator.empty())
+			while (!mReceiveAccumulatorBuffer.empty())
 			{
-				mReceiveAccumulator.pop();
+				mReceiveAccumulatorBuffer.pop_front();
 			}
 		}
 
-		bool TryGetPacket(std::vector<std::uint8_t>& outPacket)
+		bool TryGetPacket(std::vector<std::uint8_t>& outPacket, ECommand& outCommand)
 		{
+			const size_t bufferSize = mReceiveAccumulatorBuffer.size();
+			if (bufferSize < Duck::ChatProtocol::PACKET_MIN_SIZE)
+			{
+				return false;
+			}
+
+			while (mReceiveAccumulatorBuffer.size() >= Duck::ChatProtocol::PACKET_MIN_SIZE)
+			{
+				if (!(mReceiveAccumulatorBuffer[0] == Duck::ChatProtocol::HEADER[0]
+					&& mReceiveAccumulatorBuffer[1] == Duck::ChatProtocol::HEADER[1]
+					&& mReceiveAccumulatorBuffer[2] == Duck::ChatProtocol::HEADER[2]
+					&& mReceiveAccumulatorBuffer[3] == Duck::ChatProtocol::HEADER[3]))
+				{
+					mReceiveAccumulatorBuffer.pop_front();
+					continue;
+				}
+
+				const size_t COMMAND_INDEX = 4;
+				const std::size_t PAYLOAD_SIZE =
+					static_cast<std::size_t>(mReceiveAccumulatorBuffer[5])
+					| (static_cast<std::size_t>(mReceiveAccumulatorBuffer[6]) << 8);
+				const size_t PAYLOAD_START_INDEX = 7;
+				const size_t CHECKSUM_INDEX = PAYLOAD_START_INDEX + PAYLOAD_SIZE;
+				const size_t TAIL_INDEX = CHECKSUM_INDEX + 1;
+				const std::size_t PACKET_SIZE = Duck::ChatProtocol::HEADER_SIZE + Duck::ChatProtocol::COMMAND_SIZE + Duck::ChatProtocol::PAYLOAD_LENGTH_SIZE
+					+ PAYLOAD_SIZE + Duck::ChatProtocol::CHECKSUM_SIZE + Duck::ChatProtocol::TAIL_SIZE;
+
+				if (mReceiveAccumulatorBuffer.size() < PACKET_SIZE)
+				{
+					return false; // 아직 완전한 패킷이 들어오지 않음
+				}
+
+				if (!(mReceiveAccumulatorBuffer[TAIL_INDEX] == Duck::ChatProtocol::TAIL[0]
+					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 1] == Duck::ChatProtocol::TAIL[1]
+					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 2] == Duck::ChatProtocol::TAIL[2]
+					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 3] == Duck::ChatProtocol::TAIL[3]))
+				{
+					mReceiveAccumulatorBuffer.pop_front();
+					continue;
+				}
+
+				uint8_t calcCheckSum = 0;
+
+				calcCheckSum += static_cast<std::size_t>(mReceiveAccumulatorBuffer[5]);
+				calcCheckSum += static_cast<std::size_t>(mReceiveAccumulatorBuffer[6]) << 8;
+
+				vector<uint8_t> tempPayload;
+				tempPayload.reserve(PAYLOAD_SIZE);
+				for (size_t payloadIndex = 0; payloadIndex < PAYLOAD_SIZE; ++payloadIndex)
+				{
+					tempPayload.push_back(mReceiveAccumulatorBuffer[PAYLOAD_START_INDEX + payloadIndex]);
+					calcCheckSum += mReceiveAccumulatorBuffer[PAYLOAD_START_INDEX + payloadIndex];
+				}
+
+				if (calcCheckSum == mReceiveAccumulatorBuffer[CHECKSUM_INDEX])
+				{
+					switch (mReceiveAccumulatorBuffer[COMMAND_INDEX])
+					{
+					case static_cast<int>(ECommand::CHAT):
+						outCommand = ECommand::CHAT;
+						break;
+					default:
+						assert(false && "ECommand 처리 누락 또는 잘못된 명령");
+						mReceiveAccumulatorBuffer.pop_front();
+						continue;
+					}
+
+					outPacket = tempPayload;
+
+					// 완전한 패킷을 찾았으므로 패킷을 pop하고 true 반환
+					for (size_t bufferIndex = 0; bufferIndex < PACKET_SIZE; ++bufferIndex)
+					{
+						mReceiveAccumulatorBuffer.pop_front();
+					}
+					return true;
+				}
+
+				mReceiveAccumulatorBuffer.pop_front();
+				outPacket.clear();
+			}
+
+			return false;
 		}
 
 		// Getter
@@ -155,13 +238,12 @@ namespace Duck
 
 	private:
 
-
 	protected:
 		const char* DEFAULT_PORT = "27015";
 
 	private:
 		WSADATA mWsaData;
 		bool mIsRunning = false;
-		std::queue<std::uint8_t> mReceiveAccumulator; // 계속 누적해서 쌓아두는 버퍼
+		std::deque<std::uint8_t> mReceiveAccumulatorBuffer; // 계속 누적해서 쌓아두는 버퍼
 	};
 }
