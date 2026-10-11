@@ -6,6 +6,8 @@ module;
 
 export module TcpServer;
 
+import ChatProtocol;
+
 using namespace std;
 
 namespace Duck
@@ -99,7 +101,8 @@ namespace Duck
 			const int recvBufferLen = RECEIVE_BUFFER_SIZE;
 			char recvBuffer[RECEIVE_BUFFER_SIZE];
 
-			while (true)
+			mIsRunning = true;
+			while (mIsRunning)
 			{
 				result = recv(clientSocket, recvBuffer, recvBufferLen, 0);
 				if (result > 0)
@@ -122,8 +125,25 @@ namespace Duck
 			return true;
 		}
 
+		void SteopServer()
+		{
+			mIsRunning = false;
+		}
+
+		void ClearReceiveAccumulator()
+		{
+			while (!mReceiveAccumulator.empty())
+			{
+				mReceiveAccumulator.pop();
+			}
+		}
+
+		bool TryGetPacket(std::vector<std::uint8_t>& outPacket)
+		{
+		}
+
 		// Getter
-		bool GetIsRunning() const
+		bool IsRunning() const
 		{
 			return mIsRunning;
 		}
@@ -134,6 +154,7 @@ namespace Duck
 
 
 	private:
+
 
 	protected:
 		const char* DEFAULT_PORT = "27015";

@@ -13,13 +13,13 @@ namespace Duck
 		CHAT = 0x00
 	};
 
-	export class ChatProtocal final
+	export class ChatProtocol final
 	{
 	public:
-		ChatProtocal() = delete;
-		virtual ~ChatProtocal() = default;
+		ChatProtocol() = delete;
+		virtual ~ChatProtocol() = default;
 
-		ChatProtocal(std::vector<uint8_t> payload, ECommand command) : mPayload(payload), mCommand(command)
+		ChatProtocol(std::vector<uint8_t> payload, ECommand command) : mPayload(payload), mCommand(command)
 		{
 			mPayloadLength = mPayload.size();
 			mCheckSum += static_cast<uint8_t>(mCommand);
