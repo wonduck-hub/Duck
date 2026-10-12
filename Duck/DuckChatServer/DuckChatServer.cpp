@@ -4,6 +4,7 @@
 #include <iostream>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <assert.h>
 
 #pragma comment(lib, "Ws2_32.lib") // winsock 관련 해더를 가져올 때 VS에서 따로 설정 없이 코드 상으로 링크해야 하는 lib 파일을 설정하는 전처리문
 
@@ -14,10 +15,45 @@ using namespace std;
 int main()
 {
 	Duck::TcpChatServer server;
-	if (server.startServer() == false)
+	if (!server.initServer())
 	{
 		cout << "Failed to start server." << endl;
 		return 1;
+	}
+
+	while (true)
+	{
+		if (server.TryReadFromSocket())
+		{
+			cout << "Read Success!" << endl;
+		}
+		else
+		{
+			cout << "Read Fail" << endl;
+		}
+
+		Duck::ECommand command;
+		std::vector<uint8_t> payload;
+		payload.reserve(1024);
+
+		if (server.TryGetPacket(payload, command))
+		{
+			cout << "Get Success!" << endl;
+		}
+		else
+		{
+			cout << "Get Fail" << endl;
+		}
+
+		switch (command)
+		{
+		case Duck::ECommand::CHAT:
+			cout << payload.size() << endl;
+			break;
+		default:
+			assert(false && "ECommand 처리 누락 또는 잘못된 명령");
+			break;
+		}
 	}
 
 	return 0;

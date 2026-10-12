@@ -24,7 +24,8 @@ namespace Duck
 	public:
 		TcpChatServer() = default;
 		virtual ~TcpChatServer() = default;
-		bool startServer()
+
+		bool initServer()
 		{
 			int result;
 
@@ -87,7 +88,9 @@ namespace Duck
 			// 별도의 스레드에서 accept()를 호출하도록 변경 필요
 			// TODO: 여러 클라이언트 연결을 처리하기 위해, 
 			// accept() 호출 후 새로운 스레드를 생성하여 클라이언트와 통신하도록 변경 필요
-			SOCKET clientSocket = INVALID_SOCKET;
+			cout << "Wating client..." << endl;
+
+			clientSocket = INVALID_SOCKET;
 
 			clientSocket = accept(listenSocket, nullptr, nullptr);
 			if (clientSocket == INVALID_SOCKET)
@@ -98,30 +101,7 @@ namespace Duck
 				return false;
 			}
 
-			// 소켓 송수신 로직
-			const int recvBufferLen = RECEIVE_BUFFER_SIZE;
-			char recvBuffer[RECEIVE_BUFFER_SIZE];
-
 			mIsRunning = true;
-			while (mIsRunning)
-			{
-				result = recv(clientSocket, recvBuffer, recvBufferLen, 0);
-				if (result > 0)
-				{
-					std::uint32_t readSize = result;
-
-					for (int i = 0; i < readSize; ++i)
-					{
-						mReceiveAccumulatorBuffer.push_back(static_cast<uint8_t>(recvBuffer[i]));
-					}
-
-					cout << "Bytes received: " << recvBuffer << endl;
-				}
-				else
-				{
-					return 1;
-				}
-			}
 
 			return true;
 		}
@@ -137,6 +117,34 @@ namespace Duck
 			{
 				mReceiveAccumulatorBuffer.pop_front();
 			}
+		}
+
+		bool TryReadFromSocket()
+		{
+			// 소켓 송수신 로직
+			const int recvBufferLen = RECEIVE_BUFFER_SIZE;
+			char recvBuffer[RECEIVE_BUFFER_SIZE];
+
+			int result;
+
+			result = recv(clientSocket, recvBuffer, recvBufferLen, 0);
+			if (result > 0)
+			{
+				std::uint32_t readSize = result;
+
+				for (int i = 0; i < readSize; ++i)
+				{
+					mReceiveAccumulatorBuffer.push_back(static_cast<uint8_t>(recvBuffer[i]));
+				}
+
+				cout << "Bytes received: " << recvBuffer << endl;
+			}
+			else
+			{
+				return false;
+			}
+
+			return true;
 		}
 
 		bool TryGetPacket(std::vector<std::uint8_t>& outPacket, Duck::ECommand& outCommand)
@@ -245,5 +253,6 @@ namespace Duck
 		WSADATA mWsaData;
 		bool mIsRunning = false;
 		std::deque<std::uint8_t> mReceiveAccumulatorBuffer; // 계속 누적해서 쌓아두는 버퍼
+		SOCKET clientSocket;
 	};
 }
