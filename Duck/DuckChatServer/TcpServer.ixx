@@ -4,6 +4,10 @@ module;
 #include <ws2tcpip.h>
 #include <queue>
 #include <assert.h>
+#include <cstdint>
+#include <deque>
+#include <utility>
+#include <vector>
 
 export module TcpServer;
 
@@ -147,87 +151,42 @@ namespace Duck
 			return true;
 		}
 
-		bool TryGetPacket(std::vector<std::uint8_t>& outPacket, Duck::ECommand& outCommand)
+		bool TryExtractPacket(std::vector<std::uint8_t>& outPacket, Duck::ECommand& outCommand)
 		{
-			const size_t bufferSize = mReceiveAccumulatorBuffer.size();
-			if (bufferSize < Duck::ChatProtocol::PACKET_MIN_SIZE)
-			{
-				return false;
-			}
+			outPacket.clear();
 
-			while (mReceiveAccumulatorBuffer.size() >= Duck::ChatProtocol::PACKET_MIN_SIZE)
+			while (mReceiveAccumulatorBuffer.size() >= Duck::ChatProtocol::HEADER_SIZE)
 			{
-				if (!(mReceiveAccumulatorBuffer[0] == Duck::ChatProtocol::HEADER[0]
-					&& mReceiveAccumulatorBuffer[1] == Duck::ChatProtocol::HEADER[1]
-					&& mReceiveAccumulatorBuffer[2] == Duck::ChatProtocol::HEADER[2]
-					&& mReceiveAccumulatorBuffer[3] == Duck::ChatProtocol::HEADER[3]))
+				if (!IsHeaderAtBufferFront())
 				{
 					mReceiveAccumulatorBuffer.pop_front();
 					continue;
 				}
 
-				const size_t COMMAND_INDEX = 4;
-				const std::size_t PAYLOAD_SIZE =
-					static_cast<std::size_t>(mReceiveAccumulatorBuffer[5])
-					| (static_cast<std::size_t>(mReceiveAccumulatorBuffer[6]) << 8);
-				const size_t PAYLOAD_START_INDEX = 7;
-				const size_t CHECKSUM_INDEX = PAYLOAD_START_INDEX + PAYLOAD_SIZE;
-				const size_t TAIL_INDEX = CHECKSUM_INDEX + 1;
-				const std::size_t PACKET_SIZE = Duck::ChatProtocol::HEADER_SIZE + Duck::ChatProtocol::COMMAND_SIZE + Duck::ChatProtocol::PAYLOAD_LENGTH_SIZE
-					+ PAYLOAD_SIZE + Duck::ChatProtocol::CHECKSUM_SIZE + Duck::ChatProtocol::TAIL_SIZE;
+				std::vector<std::uint8_t> parsedPacket;
+				Duck::ECommand parsedCommand = Duck::ECommand::CHAT;
+				std::size_t packetSize = 0;
 
-				if (mReceiveAccumulatorBuffer.size() < PACKET_SIZE)
+				ETryParsePacketResult parseResult = TryParsePacket(parsedPacket, parsedCommand, packetSize);
+				if (parseResult == ETryParsePacketResult::Incomplete)
 				{
-					return false; // 아직 완전한 패킷이 들어오지 않음
+					return false;
 				}
 
-				if (!(mReceiveAccumulatorBuffer[TAIL_INDEX] == Duck::ChatProtocol::TAIL[0]
-					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 1] == Duck::ChatProtocol::TAIL[1]
-					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 2] == Duck::ChatProtocol::TAIL[2]
-					&& mReceiveAccumulatorBuffer[TAIL_INDEX + 3] == Duck::ChatProtocol::TAIL[3]))
+				if (parseResult == ETryParsePacketResult::Invalid)
 				{
 					mReceiveAccumulatorBuffer.pop_front();
 					continue;
 				}
 
-				uint8_t calcCheckSum = 0;
-
-				calcCheckSum += static_cast<std::size_t>(mReceiveAccumulatorBuffer[5]);
-				calcCheckSum += static_cast<std::size_t>(mReceiveAccumulatorBuffer[6]) << 8;
-
-				vector<uint8_t> tempPayload;
-				tempPayload.reserve(PAYLOAD_SIZE);
-				for (size_t payloadIndex = 0; payloadIndex < PAYLOAD_SIZE; ++payloadIndex)
+				for (std::size_t bufferIndex = 0; bufferIndex < packetSize; ++bufferIndex)
 				{
-					tempPayload.push_back(mReceiveAccumulatorBuffer[PAYLOAD_START_INDEX + payloadIndex]);
-					calcCheckSum += mReceiveAccumulatorBuffer[PAYLOAD_START_INDEX + payloadIndex];
+					mReceiveAccumulatorBuffer.pop_front();
 				}
 
-				if (calcCheckSum == mReceiveAccumulatorBuffer[CHECKSUM_INDEX])
-				{
-					switch (mReceiveAccumulatorBuffer[COMMAND_INDEX])
-					{
-					case static_cast<int>(Duck::ECommand::CHAT):
-						outCommand = Duck::ECommand::CHAT;
-						break;
-					default:
-						assert(false && "ECommand 처리 누락 또는 잘못된 명령");
-						mReceiveAccumulatorBuffer.pop_front();
-						continue;
-					}
-
-					outPacket = tempPayload;
-
-					// 완전한 패킷을 찾았으므로 패킷을 pop하고 true 반환
-					for (size_t bufferIndex = 0; bufferIndex < PACKET_SIZE; ++bufferIndex)
-					{
-						mReceiveAccumulatorBuffer.pop_front();
-					}
-					return true;
-				}
-
-				mReceiveAccumulatorBuffer.pop_front();
-				outPacket.clear();
+				outPacket = std::move(parsedPacket);
+				outCommand = parsedCommand;
+				return true;
 			}
 
 			return false;
@@ -245,6 +204,92 @@ namespace Duck
 
 
 	private:
+		enum class ETryParsePacketResult
+		{
+			Incomplete,
+			Invalid,
+			Success
+		};
+
+		bool IsHeaderAtBufferFront() const
+		{
+			return mReceiveAccumulatorBuffer[0] == Duck::ChatProtocol::HEADER[0]
+				&& mReceiveAccumulatorBuffer[1] == Duck::ChatProtocol::HEADER[1]
+				&& mReceiveAccumulatorBuffer[2] == Duck::ChatProtocol::HEADER[2]
+				&& mReceiveAccumulatorBuffer[3] == Duck::ChatProtocol::HEADER[3];
+		}
+
+		ETryParsePacketResult TryParsePacket(
+			std::vector<std::uint8_t>& outPacket,
+			Duck::ECommand& outCommand,
+			std::size_t& outPacketSize) const
+		{
+			const std::size_t HEADER_SIZE = Duck::ChatProtocol::HEADER_SIZE;
+			const std::size_t COMMAND_INDEX = HEADER_SIZE;
+			const std::size_t PAYLOAD_LENGTH_INDEX = COMMAND_INDEX + Duck::ChatProtocol::COMMAND_SIZE;
+			const std::size_t PAYLOAD_START_INDEX = PAYLOAD_LENGTH_INDEX + Duck::ChatProtocol::PAYLOAD_LENGTH_SIZE;
+			const std::size_t LENGTH_FIELD_END = PAYLOAD_START_INDEX;
+
+			if (mReceiveAccumulatorBuffer.size() < LENGTH_FIELD_END)
+			{
+				return ETryParsePacketResult::Incomplete;
+			}
+
+			const std::size_t PAYLOAD_SIZE =
+				static_cast<std::size_t>(mReceiveAccumulatorBuffer[PAYLOAD_LENGTH_INDEX])
+				| (static_cast<std::size_t>(mReceiveAccumulatorBuffer[PAYLOAD_LENGTH_INDEX + 1]) << 8);
+			const std::size_t CHECKSUM_INDEX = PAYLOAD_START_INDEX + PAYLOAD_SIZE;
+			const std::size_t TAIL_INDEX = CHECKSUM_INDEX + Duck::ChatProtocol::CHECKSUM_SIZE;
+			const std::size_t PACKET_SIZE = Duck::ChatProtocol::PACKET_MIN_SIZE + PAYLOAD_SIZE;
+
+			if (mReceiveAccumulatorBuffer.size() < PACKET_SIZE)
+			{
+				return ETryParsePacketResult::Incomplete;
+			}
+
+			if (mReceiveAccumulatorBuffer[TAIL_INDEX] != Duck::ChatProtocol::TAIL[0]
+				|| mReceiveAccumulatorBuffer[TAIL_INDEX + 1] != Duck::ChatProtocol::TAIL[1]
+				|| mReceiveAccumulatorBuffer[TAIL_INDEX + 2] != Duck::ChatProtocol::TAIL[2]
+				|| mReceiveAccumulatorBuffer[TAIL_INDEX + 3] != Duck::ChatProtocol::TAIL[3])
+			{
+				return ETryParsePacketResult::Invalid;
+			}
+
+			Duck::ECommand parsedCommand;
+			switch (mReceiveAccumulatorBuffer[COMMAND_INDEX])
+			{
+			case static_cast<int>(Duck::ECommand::CHAT):
+				parsedCommand = Duck::ECommand::CHAT;
+				break;
+			default:
+				assert(false && "ECommand 처리 누락 또는 잘못된 명령");
+				return ETryParsePacketResult::Invalid;
+			}
+
+			std::uint8_t calcCheckSum = 0;
+			calcCheckSum += mReceiveAccumulatorBuffer[PAYLOAD_LENGTH_INDEX];
+			calcCheckSum += mReceiveAccumulatorBuffer[PAYLOAD_LENGTH_INDEX + 1];
+			calcCheckSum += static_cast<std::uint8_t>(parsedCommand);
+
+			std::vector<std::uint8_t> parsedPayload;
+			parsedPayload.reserve(PAYLOAD_SIZE);
+			for (std::size_t payloadIndex = 0; payloadIndex < PAYLOAD_SIZE; ++payloadIndex)
+			{
+				const std::uint8_t payloadByte = mReceiveAccumulatorBuffer[PAYLOAD_START_INDEX + payloadIndex];
+				parsedPayload.push_back(payloadByte);
+				calcCheckSum += payloadByte;
+			}
+
+			if (calcCheckSum != mReceiveAccumulatorBuffer[CHECKSUM_INDEX])
+			{
+				return ETryParsePacketResult::Invalid;
+			}
+
+			outPacket = std::move(parsedPayload);
+			outCommand = parsedCommand;
+			outPacketSize = PACKET_SIZE;
+			return ETryParsePacketResult::Success;
+		}
 
 	protected:
 		const char* DEFAULT_PORT = "27015";

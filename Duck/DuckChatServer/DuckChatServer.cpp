@@ -21,6 +21,8 @@ int main()
 		return 1;
 	}
 
+	Duck::ECommand command = Duck::ECommand::CHAT;
+	std::vector<uint8_t> payload;
 	while (true)
 	{
 		if (server.TryReadFromSocket())
@@ -32,27 +34,19 @@ int main()
 			cout << "Read Fail" << endl;
 		}
 
-		Duck::ECommand command;
-		std::vector<uint8_t> payload;
-		payload.reserve(1024);
-
-		if (server.TryGetPacket(payload, command))
+		while (server.TryExtractPacket(payload, command))
 		{
 			cout << "Get Success!" << endl;
-		}
-		else
-		{
-			cout << "Get Fail" << endl;
-		}
 
-		switch (command)
-		{
-		case Duck::ECommand::CHAT:
-			cout << payload.size() << endl;
-			break;
-		default:
-			assert(false && "ECommand 처리 누락 또는 잘못된 명령");
-			break;
+			switch (command)
+			{
+			case Duck::ECommand::CHAT:
+				cout << payload.size() << endl;
+				break;
+			default:
+				assert(false && "ECommand 처리 누락 또는 잘못된 명령");
+				break;
+			}
 		}
 	}
 
