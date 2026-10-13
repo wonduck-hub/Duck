@@ -21,6 +21,8 @@ int main()
 		return 1;
 	}
 
+	server.StartConnectClient();
+
 	Duck::ECommand command = Duck::ECommand::CHAT;
 	std::vector<uint8_t> payload;
 	while (true)
@@ -29,14 +31,10 @@ int main()
 		{
 			cout << "Read Success!" << endl;
 		}
-		else
-		{
-			cout << "Read Fail" << endl;
-		}
 
 		while (server.TryExtractPacket(payload, command))
 		{
-			cout << "Get Success!" << endl;
+			cout << "Extract Success: " << static_cast<uint8_t>(command) << endl;
 
 			switch (command)
 			{

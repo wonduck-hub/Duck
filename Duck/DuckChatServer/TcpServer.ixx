@@ -8,6 +8,7 @@ module;
 #include <deque>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 export module TcpServer;
 
@@ -26,7 +27,13 @@ namespace Duck
 		};
 
 	public:
-		TcpChatServer() = default;
+		TcpChatServer()
+		{
+			mClientSockets = vector<SOCKET>();
+			mClientSockets.reserve(256);
+
+			mClientSockets.push_back(INVALID_SOCKET);
+		}
 		virtual ~TcpChatServer() = default;
 
 		bool initServer()
@@ -58,49 +65,32 @@ namespace Duck
 				return false;
 			}
 
-			SOCKET listenSocket = INVALID_SOCKET;
+			mListenSocket = INVALID_SOCKET;
 
-			listenSocket = socket(addressInfo->ai_family, addressInfo->ai_socktype, addressInfo->ai_protocol);
-			if (listenSocket == INVALID_SOCKET)
+			mListenSocket = socket(addressInfo->ai_family, addressInfo->ai_socktype, addressInfo->ai_protocol);
+			if (mListenSocket == INVALID_SOCKET)
 			{
 				cout << "socket failed: " << WSAGetLastError() << endl;
-				closesocket(listenSocket);
+				closesocket(mListenSocket);
 				WSACleanup();
 				return false;
 			}
 
 			// Setup the TCP listening socket
-			result = bind(listenSocket, addressInfo->ai_addr, (int)addressInfo->ai_addrlen);
+			result = bind(mListenSocket, addressInfo->ai_addr, (int)addressInfo->ai_addrlen);
 			if (result != 0)
 			{
 				cout << "bind failed: " << WSAGetLastError() << endl;
-				closesocket(listenSocket);
+				closesocket(mListenSocket);
 				WSACleanup();
 				return false;
 			}
 
 			// 수신 대기
-			if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
+			if (listen(mListenSocket, SOMAXCONN) == SOCKET_ERROR)
 			{
 				cout << "listen failed: " << WSAGetLastError() << endl;
-				closesocket(listenSocket);
-				WSACleanup();
-				return false;
-			}
-
-			// TODO: accept()를 호출하면 연결이 들어올 때까지 블로킹되므로, 
-			// 별도의 스레드에서 accept()를 호출하도록 변경 필요
-			// TODO: 여러 클라이언트 연결을 처리하기 위해, 
-			// accept() 호출 후 새로운 스레드를 생성하여 클라이언트와 통신하도록 변경 필요
-			cout << "Wating client..." << endl;
-
-			clientSocket = INVALID_SOCKET;
-
-			clientSocket = accept(listenSocket, nullptr, nullptr);
-			if (clientSocket == INVALID_SOCKET)
-			{
-				cout << "accept failed: " << WSAGetLastError() << endl;
-				closesocket(listenSocket);
+				closesocket(mListenSocket);
 				WSACleanup();
 				return false;
 			}
@@ -110,9 +100,27 @@ namespace Duck
 			return true;
 		}
 
-		void SteopServer()
+		bool StartServer()
+		{
+			assert(mListenSocket != INVALID_SOCKET && "mClientSocket is INVALID_SOCKET");
+
+			mIsRunning = true;
+			mIsConnectingClient = true;
+
+			return true;
+		}
+
+		void StopServer()
 		{
 			mIsRunning = false;
+
+			if (mListenSocket != INVALID_SOCKET)
+			{
+				closesocket(mListenSocket);
+				mListenSocket = INVALID_SOCKET;
+			}
+
+			StopConnectClient();
 		}
 
 		void ClearReceiveAccumulator()
@@ -131,7 +139,12 @@ namespace Duck
 
 			int result;
 
-			result = recv(clientSocket, recvBuffer, recvBufferLen, 0);
+			// TODO: 패킷을 받아올 때 모든 클라이언트로부터 받을 수 있으므로 이에 대한 처리 필요
+			{
+				std::scoped_lock<std::mutex> lock(sClientSocketsMutext);
+				result = recv(mClientSockets[0], recvBuffer, recvBufferLen, 0);
+			}
+
 			if (result > 0)
 			{
 				std::uint32_t readSize = result;
@@ -190,6 +203,34 @@ namespace Duck
 			}
 
 			return false;
+		}
+
+		void StartConnectClient()
+		{
+			if (mIsConnectingClient)
+			{
+				return;
+			}
+
+			mIsConnectingClient = true;
+			mConnectClientThread =
+				std::thread(&TcpChatServer::ConnectingClient, this);
+		}
+
+		void StopConnectClient()
+		{
+			mIsConnectingClient = false;
+
+			if (mListenSocket != INVALID_SOCKET)
+			{
+				closesocket(mListenSocket);
+				mListenSocket = INVALID_SOCKET;
+			}
+
+			if (mConnectClientThread.joinable())
+			{
+				mConnectClientThread.join();
+			}
 		}
 
 		// Getter
@@ -291,13 +332,45 @@ namespace Duck
 			return ETryParsePacketResult::Success;
 		}
 
+		void ConnectingClient()
+		{
+			while (mIsConnectingClient)
+			{
+				SOCKET tempSocket = accept(mListenSocket, nullptr, nullptr);
+
+				if (mClientSockets[mClientCount] == INVALID_SOCKET)
+				{
+					if (!mIsConnectingClient)
+					{
+						break; // 서버 종료로 accept가 풀린 경우
+					}
+
+					cout << "accept failed: " << WSAGetLastError() << endl;
+					WSACleanup();
+
+					continue;
+				}
+
+				{
+					std::scoped_lock<std::mutex> lock(sClientSocketsMutext);
+					mClientSockets.push_back(tempSocket);
+				}
+			}
+		}
+
 	protected:
 		const char* DEFAULT_PORT = "27015";
 
 	private:
 		WSADATA mWsaData;
 		bool mIsRunning = false;
+		bool mIsConnectingClient = false;
 		std::deque<std::uint8_t> mReceiveAccumulatorBuffer; // 계속 누적해서 쌓아두는 버퍼
-		SOCKET clientSocket;
+		SOCKET mListenSocket;
+		std::vector<SOCKET> mClientSockets;
+		size_t mClientCount = 0;
+
+		std::thread mConnectClientThread;
+		std::mutex sClientSocketsMutext;
 	};
 }
