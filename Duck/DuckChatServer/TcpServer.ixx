@@ -13,6 +13,7 @@ module;
 export module TcpServer;
 
 import ChatProtocol;
+import TcpClient;
 
 using namespace std;
 
@@ -29,10 +30,10 @@ namespace Duck
 	public:
 		TcpChatServer()
 		{
-			mClientSockets = vector<SOCKET>();
-			mClientSockets.reserve(256);
+			mClients = vector<TcpClient>();
+			mClients.reserve(256);
 
-			mClientSockets.push_back(INVALID_SOCKET);
+			mClients.push_back(INVALID_SOCKET);
 		}
 		virtual ~TcpChatServer() = default;
 
@@ -131,7 +132,7 @@ namespace Duck
 			}
 		}
 
-		bool TryReadFromSocket()
+		void ReceiveData()
 		{
 			// 소켓 송수신 로직
 			const int recvBufferLen = RECEIVE_BUFFER_SIZE;
@@ -139,29 +140,29 @@ namespace Duck
 
 			int result;
 
-			// TODO: 패킷을 받아올 때 모든 클라이언트로부터 받을 수 있으므로 이에 대한 처리 필요
+			for (int clientIndex = 0; clientIndex < mClientCount; ++clientIndex)
 			{
-				std::scoped_lock<std::mutex> lock(sClientSocketsMutext);
-				result = recv(mClientSockets[0], recvBuffer, recvBufferLen, 0);
-			}
-
-			if (result > 0)
-			{
-				std::uint32_t readSize = result;
-
-				for (int i = 0; i < readSize; ++i)
+				// TODO: 패킷을 받아올 때 모든 클라이언트로부터 받을 수 있으므로 이에 대한 처리 필요
 				{
-					mReceiveAccumulatorBuffer.push_back(static_cast<uint8_t>(recvBuffer[i]));
+					std::scoped_lock<std::mutex> lock(sClientMutext);
+					result = mClients[clientIndex].Receive(recvBuffer, recvBufferLen, 0);
 				}
 
-				cout << "Bytes received: " << recvBuffer << endl;
-			}
-			else
-			{
-				return false;
-			}
+				if (result > 0)
+				{
+					std::uint32_t readSize = result;
 
-			return true;
+					for (int i = 0; i < readSize; ++i)
+					{
+						mReceiveAccumulatorBuffer.push_back(static_cast<uint8_t>(recvBuffer[i]));
+					}
+
+					cout << "Bytes received: " << recvBuffer << endl;
+				}
+				else
+				{
+				}
+			}
 		}
 
 		bool TryExtractPacket(std::vector<std::uint8_t>& outPacket, Duck::ECommand& outCommand)
@@ -336,9 +337,9 @@ namespace Duck
 		{
 			while (mIsConnectingClient)
 			{
-				SOCKET tempSocket = accept(mListenSocket, nullptr, nullptr);
+				TcpClient tempSocket = TcpClient(accept(mListenSocket, nullptr, nullptr));
 
-				if (mClientSockets[mClientCount] == INVALID_SOCKET)
+				if (mClients[mClientCount].GetSocket() == INVALID_SOCKET)
 				{
 					if (!mIsConnectingClient)
 					{
@@ -352,8 +353,8 @@ namespace Duck
 				}
 
 				{
-					std::scoped_lock<std::mutex> lock(sClientSocketsMutext);
-					mClientSockets.push_back(tempSocket);
+					std::scoped_lock<std::mutex> lock(sClientMutext);
+					mClients.push_back(tempSocket);
 				}
 			}
 		}
@@ -367,10 +368,10 @@ namespace Duck
 		bool mIsConnectingClient = false;
 		std::deque<std::uint8_t> mReceiveAccumulatorBuffer; // 계속 누적해서 쌓아두는 버퍼
 		SOCKET mListenSocket;
-		std::vector<SOCKET> mClientSockets;
+		std::vector<Duck::TcpClient> mClients;
 		size_t mClientCount = 0;
 
 		std::thread mConnectClientThread;
-		std::mutex sClientSocketsMutext;
+		std::mutex sClientMutext;
 	};
 }

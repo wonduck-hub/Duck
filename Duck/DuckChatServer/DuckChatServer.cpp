@@ -23,23 +23,21 @@ int main()
 
 	server.StartConnectClient();
 
-	Duck::ECommand command = Duck::ECommand::CHAT;
-	std::vector<uint8_t> payload;
+	Duck::ECommand commandOut;
+	std::vector<uint8_t> payloadOut;
 	while (true)
 	{
-		if (server.TryReadFromSocket())
-		{
-			cout << "Read Success!" << endl;
-		}
+		// TODO: Receive를 하는 스레드를 별도로 만들어 관리 필요
+		server.ReceiveData();
 
-		while (server.TryExtractPacket(payload, command))
+		while (server.TryExtractPacket(payloadOut, commandOut))
 		{
-			cout << "Extract Success: " << static_cast<uint8_t>(command) << endl;
+			cout << "Extract Success: " << static_cast<uint8_t>(commandOut) << endl;
 
-			switch (command)
+			switch (commandOut)
 			{
 			case Duck::ECommand::CHAT:
-				cout << payload.size() << endl;
+				cout << payloadOut.size() << endl;
 				break;
 			default:
 				assert(false && "ECommand 처리 누락 또는 잘못된 명령");
