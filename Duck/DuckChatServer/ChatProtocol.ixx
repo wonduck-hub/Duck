@@ -37,7 +37,7 @@ namespace Duck
 		{
 			return mCommand;
 		}
-		std::uint16_t GetPayloadLength()
+		size_t GetPayloadLength()
 		{
 			return mPayloadLength;
 		}
@@ -67,7 +67,7 @@ namespace Duck
 
 	private:
 		ECommand mCommand = ECommand::CHAT;
-		std::uint16_t mPayloadLength;
+		size_t mPayloadLength;
 		std::vector<std::uint8_t> mPayload;
 		std::uint8_t mCheckSum = 0;
 

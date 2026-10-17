@@ -1,6 +1,3 @@
-// DuckChatServer.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
-//
-
 #include <iostream>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
@@ -9,6 +6,7 @@
 #pragma comment(lib, "Ws2_32.lib") // winsock 관련 해더를 가져올 때 VS에서 따로 설정 없이 코드 상으로 링크해야 하는 lib 파일을 설정하는 전처리문
 
 import TcpServer;
+import ChatProtocol;
 
 using namespace std;
 
@@ -23,21 +21,18 @@ int main()
 
 	server.StartConnectClient();
 
-	Duck::ECommand commandOut;
-	std::vector<uint8_t> payloadOut;
+	std::vector<Duck::ReceivedPacket> packets;
 	while (true)
 	{
-		// TODO: Receive를 하는 스레드를 별도로 만들어 관리 필요
-		server.ReceiveData();
-
-		while (server.TryExtractPacket(payloadOut, commandOut))
+		packets = server.GetPackets();
+		for (int packetIndex = 0; packetIndex < packets.size(); ++packetIndex)
 		{
-			cout << "Extract Success: " << static_cast<uint8_t>(commandOut) << endl;
+			cout << "Extract Success: " << static_cast<uint8_t>(packets[packetIndex].Command) << endl;
 
-			switch (commandOut)
+			switch (packets[packetIndex].Command)
 			{
 			case Duck::ECommand::CHAT:
-				cout << payloadOut.size() << endl;
+				cout << packets[packetIndex].Payload.size() << endl;
 				break;
 			default:
 				assert(false && "ECommand 처리 누락 또는 잘못된 명령");
