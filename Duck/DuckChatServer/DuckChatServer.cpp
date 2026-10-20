@@ -6,7 +6,7 @@
 #pragma comment(lib, "Ws2_32.lib") // winsock 관련 해더를 가져올 때 VS에서 따로 설정 없이 코드 상으로 링크해야 하는 lib 파일을 설정하는 전처리문
 
 import TcpServer;
-import ChatProtocol;
+import DuckPacket;
 
 using namespace std;
 
@@ -21,22 +21,32 @@ int main()
 
 	server.StartConnectClient();
 
-	std::vector<Duck::ReceivedPacket> packets;
+	std::vector<Duck::DuckPacket> packets;
 	while (true)
 	{
 		packets = server.GetPackets();
 		for (int packetIndex = 0; packetIndex < packets.size(); ++packetIndex)
 		{
-			cout << "Extract Success: " << static_cast<uint8_t>(packets[packetIndex].Command) << endl;
+			cout << "Extract Success: " << static_cast<uint8_t>(packets[packetIndex].GetCommand()) << endl;
 
-			switch (packets[packetIndex].Command)
+			switch (packets[packetIndex].GetVersion())
+			{
+			case Duck::EVersion::VERSION1:
+				cout << "version: " << static_cast<int>(packets[packetIndex].GetVersion()) << endl;
+				break;
+			default:
+				assert(false && "EVersion 처리 누락 또는 잘못된 버전");
+				continue;
+			}
+
+			switch (packets[packetIndex].GetCommand())
 			{
 			case Duck::ECommand::CHAT:
-				cout << packets[packetIndex].Payload.size() << endl;
+				cout << packets[packetIndex].GetPayload().size() << endl;
 				break;
 			default:
 				assert(false && "ECommand 처리 누락 또는 잘못된 명령");
-				break;
+				continue;
 			}
 		}
 	}

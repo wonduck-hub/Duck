@@ -13,22 +13,13 @@ module;
 
 export module TcpServer;
 
-import ChatProtocol;
+import DuckPacket;
 import TcpClient;
 
 using namespace std;
 
 namespace Duck
 {
-	export struct ReceivedPacket
-	{
-	public:
-		ReceivedPacket(std::vector<std::uint8_t>payload, Duck::ECommand command)
-			: Payload(payload), Command(command) {}
-		std::vector<std::uint8_t> Payload;
-		Duck::ECommand Command;
-	};
-
 	export class TcpChatServer final
 	{
 	public:
@@ -153,12 +144,9 @@ namespace Duck
 			}
 		}
 
-		std::vector<ReceivedPacket> GetPackets()
+		std::vector<DuckPacket> GetPackets()
 		{
-			std::vector<ReceivedPacket> result = std::vector<ReceivedPacket>();
-
-			std::vector<uint8_t> packet = std::vector<uint8_t>();
-			ECommand command;
+			std::vector<DuckPacket> result = std::vector<DuckPacket>();
 
 			size_t clientCount = 0;
 			{
@@ -168,8 +156,11 @@ namespace Duck
 
 			for (int clientIndex = 0; clientIndex < clientCount; ++clientIndex)
 			{
-				mClients[clientIndex]->TryExtractPacket(packet, command);
-				result.push_back(ReceivedPacket(packet, command));
+				Duck::DuckPacket outTempProtocol;
+				if (mClients[clientIndex]->TryExtractPacket(outTempProtocol))
+				{
+					result.push_back(outTempProtocol);
+				}
 			}
 
 			return result;
@@ -214,7 +205,7 @@ namespace Duck
 		}
 
 	protected:
-		
+
 
 	private:
 		WSADATA mWsaData;
