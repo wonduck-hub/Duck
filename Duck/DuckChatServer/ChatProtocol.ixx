@@ -32,7 +32,11 @@ namespace Duck
 	export class DuckPacket final
 	{
 	public:
-		DuckPacket() = default;
+		DuckPacket()
+		{
+			mVersion = Duck::EVersion::NONE;
+			mCommand = Duck::ECommand::NONE;
+		}
 		virtual ~DuckPacket() = default;
 
 		DuckPacket(EVersion version, ECommand command, std::vector<uint8_t> payload) : mVersion(version), mCommand(command), mPayload(payload)
@@ -50,27 +54,27 @@ namespace Duck
 		}
 
 		// Getter
-		EVersion GetVersion()
+		EVersion GetVersion() const
 		{
 			return mVersion;
 		}
-		ECommand GetCommand()
+		ECommand GetCommand() const
 		{
 			return mCommand;
 		}
-		size_t GetPayloadLength()
+		size_t GetPayloadLength() const
 		{
 			return mPayloadLength;
 		}
-		std::vector<uint8_t> GetPayload()
+		std::vector<uint8_t> GetPayload() const
 		{
 			return mPayload;
-		}
-		std::uint8_t GetCheckSum()
+		} 
+		std::uint8_t GetCheckSum() const
 		{
 			return mCheckSum;
 		}
-		std::size_t GetProtocolSize()
+		std::size_t GetProtocolSize() const
 		{
 			return HEADER_SIZE
 				+ VERSION_SIZE

@@ -84,6 +84,8 @@ namespace Duck
 					return false;
 				}
 
+				assert(outProtocol.GetVersion() != Duck::EVersion::NONE && "패킷 읽기 실패");
+
 				for (std::size_t bufferIndex = 0; bufferIndex < outProtocol.GetProtocolSize(); ++bufferIndex)
 				{
 					mReceiveAccumulatorBuffer.pop_front();
