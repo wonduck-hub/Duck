@@ -1,5 +1,6 @@
 module;
 #include <WinSock2.h>
+#include <ws2tcpip.h>
 #include <utility>
 #include <mutex>
 #include <thread>
@@ -14,6 +15,8 @@ export module TcpClient;
 
 import DuckPacket;
 
+using namespace std;
+
 namespace Duck
 {
 	export class TcpClient final
@@ -22,6 +25,7 @@ namespace Duck
 		explicit TcpClient(SOCKET socket)
 			: mSocket(socket)
 		{}
+
 		~TcpClient()
 		{
 			EndReceive();
@@ -98,11 +102,99 @@ namespace Duck
 			return false;
 		}
 
+		static bool TryConnect(const char* address, const char* port, std::unique_ptr<TcpClient>& outClientOrNull)
+		{
+			outClientOrNull.reset();
+
+			WSADATA wsaData;
+			struct addrinfo* result = nullptr;
+			struct addrinfo hints;
+
+			ZeroMemory(&hints, sizeof(addrinfo));
+			hints.ai_family = AF_INET;
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_protocol = IPPROTO_TCP;
+
+			int errResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+			if (errResult != 0)
+			{
+				cout << "WSAStartup failed: " << errResult << endl;
+				return false;
+			}
+
+			errResult = getaddrinfo(address, port, &hints, &result);
+			if (errResult != 0)
+			{
+				cout << "getaddrinfo failed: " << errResult << endl;
+				WSACleanup();
+				return false;
+			}
+
+			SOCKET connectSocket;
+
+			connectSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+			if (connectSocket == INVALID_SOCKET)
+			{
+				cout << "Error at socket(): " << WSAGetLastError() << endl;
+				freeaddrinfo(result);
+				WSACleanup();
+				return false;
+			}
+
+			errResult = connect(connectSocket, result->ai_addr, (int)result->ai_addrlen);
+			if (errResult == SOCKET_ERROR)
+			{
+				cout << "Error at connect(): " << WSAGetLastError() << endl;
+				closesocket(connectSocket);
+				freeaddrinfo(result);
+				WSACleanup();
+				return false;
+			}
+
+			outClientOrNull = std::make_unique<TcpClient>(connectSocket);
+			return true;
+		}
+
+		bool Send(const Duck::DuckPacket& packet)
+		{
+			const std::vector<std::uint8_t> packetBytes = packet.GetPacketBytes();
+
+			std::size_t sentBytes = 0; // 이전에 보냈던 bytes 기억용 변수
+
+			std::scoped_lock<std::mutex> lock(mSendMutex);
+
+			while (sentBytes < packetBytes.size())
+			{
+				const std::size_t remainingBytes = packetBytes.size() - sentBytes;
+				const int sendSize = static_cast<int>(
+					remainingBytes > 65536 ? 65536 : remainingBytes);
+
+				const char* sendData = reinterpret_cast<const char*>(
+					packetBytes.data() + sentBytes);
+
+				const int result = send(mSocket, sendData, sendSize, 0);
+
+				if (result == SOCKET_ERROR || result == 0)
+				{
+					return false;
+				}
+
+				sentBytes += static_cast<std::size_t>(result);
+			}
+
+			return true;
+		}
+
 		// Getter
 
 		SOCKET GetSocket() const
 		{
 			return mSocket;
+		}
+
+		bool IsSocketOpen() const
+		{
+			return mSocket != SOCKET_ERROR && mSocket != INVALID_SOCKET;
 		}
 
 
@@ -164,5 +256,7 @@ namespace Duck
 		std::atomic_bool mIsReceive = false;
 		std::thread mReceiveThread;
 		std::mutex mReceiveMutex;
+
+		std::mutex mSendMutex;
 	};
 }

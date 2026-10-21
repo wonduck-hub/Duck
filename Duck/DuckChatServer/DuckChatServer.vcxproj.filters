@@ -21,7 +21,7 @@
     <ClCompile Include="TcpServer.ixx">
       <Filter>헤더 파일</Filter>
     </ClCompile>
-    <ClCompile Include="ChatProtocol.ixx">
+    <ClCompile Include="DuckPacket.ixx">
       <Filter>헤더 파일</Filter>
     </ClCompile>
     <ClCompile Include="TcpClient.ixx">

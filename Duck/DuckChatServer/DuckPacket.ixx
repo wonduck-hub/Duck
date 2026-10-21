@@ -29,6 +29,7 @@ namespace Duck
 		Success
 	};
 
+	// TODO: DuckProtocol 클래스를 만들어 프로토콜 코드를 분리하고 재사용성 확보 필요 (현재 프로토콜 코드에 대해 많은 코드 중복이 발생)
 	export class DuckPacket final
 	{
 	public:
@@ -44,6 +45,8 @@ namespace Duck
 			mPayloadLength = mPayload.size();
 			mCheckSum += static_cast<uint8_t>(mVersion);
 			mCheckSum += static_cast<uint8_t>(mPayload.size() >> 8);
+			mCheckSum += static_cast<uint8_t>(mPayload.size() >> 16);
+			mCheckSum += static_cast<uint8_t>(mPayload.size() >> 24);
 			mCheckSum += static_cast<uint8_t>(mPayload.size());
 			mCheckSum += static_cast<uint8_t>(mCommand);
 
@@ -51,6 +54,8 @@ namespace Duck
 			{
 				mCheckSum += payload[i];
 			}
+
+			assert(mPayload.size() == mPayloadLength && "mPayloadLength and mPayload.size() miss match.");
 		}
 
 		// Getter
@@ -69,7 +74,7 @@ namespace Duck
 		std::vector<uint8_t> GetPayload() const
 		{
 			return mPayload;
-		} 
+		}
 		std::uint8_t GetCheckSum() const
 		{
 			return mCheckSum;
@@ -84,6 +89,63 @@ namespace Duck
 				+ CHECKSUM_SIZE
 				+ TAIL_SIZE;
 		}
+		std::vector<uint8_t> GetPacketBytes() const
+		{
+			std::vector<uint8_t> result;
+
+			result.push_back(HEADER[0]);
+			result.push_back(HEADER[1]);
+			result.push_back(HEADER[2]);
+			result.push_back(HEADER[3]);
+			result.push_back(static_cast<uint8_t>(mVersion));
+			result.push_back(static_cast<uint8_t>(mCommand));
+			result.push_back(static_cast<uint8_t>(mPayloadLength));
+			result.push_back(static_cast<uint8_t>(mPayloadLength >> 8));
+			result.push_back(static_cast<uint8_t>(mPayloadLength >> 16));
+			result.push_back(static_cast<uint8_t>(mPayloadLength >> 24));
+
+			for (size_t i = 0; i < mPayload.size(); ++i)
+			{
+				result.push_back(mPayload[i]);
+			}
+
+			result.push_back(mCheckSum);
+			result.push_back(TAIL[0]);
+			result.push_back(TAIL[1]);
+			result.push_back(TAIL[2]);
+			result.push_back(TAIL[3]);
+
+			return result;
+		}
+
+		std::vector<char> GetPacketChars() const
+		{
+			std::vector<char> result;
+
+			result.push_back(HEADER[0]);
+			result.push_back(HEADER[1]);
+			result.push_back(HEADER[2]);
+			result.push_back(HEADER[3]);
+			result.push_back(static_cast<char>(mVersion));
+			result.push_back(static_cast<char>(mCommand));
+			result.push_back(static_cast<char>(mPayloadLength));
+			result.push_back(static_cast<char>(mPayloadLength >> 8));
+			result.push_back(static_cast<char>(mPayloadLength >> 16));
+			result.push_back(static_cast<char>(mPayloadLength >> 24));
+
+			for (size_t index = 0; index < mPayload.size(); ++index)
+			{
+				result.push_back(mPayload[index]);
+			}
+
+			result.push_back(mCheckSum);
+			result.push_back(TAIL[0]);
+			result.push_back(TAIL[1]);
+			result.push_back(TAIL[2]);
+			result.push_back(TAIL[3]);
+
+			return result;
+		}
 
 		// Setter
 
@@ -91,7 +153,7 @@ namespace Duck
 		// TODO: 추후 TryParsepacket 과 같은 파싱 함수를 DuckProtocol 이라는 정적 클래스로 분리 고려 [2026.10.20]
 		static ETryParsePacketResult TryParsePacket(
 			const std::deque<std::uint8_t>& buffer,
-			DuckPacket& outProtocol) 
+			DuckPacket& outProtocol)
 		{
 			const std::size_t HEADER_SIZE = Duck::DuckPacket::HEADER_SIZE;
 			const std::size_t VERSION_IDNEX = HEADER_SIZE;
@@ -107,7 +169,9 @@ namespace Duck
 
 			const std::size_t PAYLOAD_SIZE =
 				static_cast<std::size_t>(buffer[PAYLOAD_LENGTH_INDEX])
-				| (static_cast<std::size_t>(buffer[PAYLOAD_LENGTH_INDEX + 1]) << 8);
+				| (static_cast<std::size_t>(buffer[PAYLOAD_LENGTH_INDEX + 1]) << 8)
+				| (static_cast<std::size_t>(buffer[PAYLOAD_LENGTH_INDEX + 2]) << 16)
+				| (static_cast<std::size_t>(buffer[PAYLOAD_LENGTH_INDEX + 3]) << 24);
 			const std::size_t CHECKSUM_INDEX = PAYLOAD_START_INDEX + PAYLOAD_SIZE;
 			const std::size_t TAIL_INDEX = CHECKSUM_INDEX + Duck::DuckPacket::CHECKSUM_SIZE;
 			const std::size_t PACKET_SIZE = Duck::DuckPacket::PACKET_MIN_SIZE + PAYLOAD_SIZE;
@@ -152,6 +216,8 @@ namespace Duck
 			calcCheckSum += static_cast<std::uint8_t>(parsedCommand);
 			calcCheckSum += buffer[PAYLOAD_LENGTH_INDEX];
 			calcCheckSum += buffer[PAYLOAD_LENGTH_INDEX + 1];
+			calcCheckSum += buffer[PAYLOAD_LENGTH_INDEX + 2];
+			calcCheckSum += buffer[PAYLOAD_LENGTH_INDEX + 3];
 
 			// TODO: 추후 switch 문으로 version에 따른 Payload 파싱 함수로 변환 필요
 			std::vector<std::uint8_t> parsedPayload;
@@ -189,11 +255,10 @@ namespace Duck
 		static constexpr std::size_t HEADER_SIZE = 4;
 		static constexpr std::size_t VERSION_SIZE = 1;
 		static constexpr std::size_t COMMAND_SIZE = 1;
-		static constexpr std::size_t PAYLOAD_LENGTH_SIZE = 2;
+		static constexpr std::size_t PAYLOAD_LENGTH_SIZE = 4;
 		static constexpr std::size_t CHECKSUM_SIZE = 1;
 		static constexpr std::size_t TAIL_SIZE = 4;
 		static constexpr std::size_t PACKET_MIN_SIZE = HEADER_SIZE + VERSION_SIZE + COMMAND_SIZE + PAYLOAD_LENGTH_SIZE + CHECKSUM_SIZE + TAIL_SIZE;
-
 
 	private:
 		EVersion mVersion;
@@ -201,6 +266,5 @@ namespace Duck
 		size_t mPayloadLength;
 		std::vector<std::uint8_t> mPayload;
 		std::uint8_t mCheckSum = 0;
-
 	};
 }

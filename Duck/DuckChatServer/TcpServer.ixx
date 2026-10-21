@@ -29,7 +29,7 @@ namespace Duck
 		}
 		virtual ~TcpChatServer() = default;
 
-		bool initServer()
+		bool Init()
 		{
 			int result;
 
