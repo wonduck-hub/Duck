@@ -27,6 +27,7 @@
       <Platform Solution="*|x86" Project="x86" />
       <Deploy />
     </Project>
+    <Project Path="DuckChatServer/DuckChatNative.vcxproj" Id="93c9b22a-ae74-4fe6-90c8-c9cc877cb229" />
     <Project Path="DuckChatClient/DuckChatClient.vcxproj" Id="83cc9df9-816f-4667-b9e6-1b991a4c8964">
       <Platform Solution="*|ARM64" Project="x64" />
     </Project>

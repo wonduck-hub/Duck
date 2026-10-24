@@ -1,6 +1,9 @@
 #include <memory>
 #include <vector>
 #include <assert.h>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 import DuckClient;
 import DuckPacket;

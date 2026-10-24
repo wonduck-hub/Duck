@@ -16,6 +16,20 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DuckChatNativeProject>$(MSBuildThisFileDirectory)..\DuckChatServer\DuckChatNative.vcxproj</DuckChatNativeProject>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <DuckChatNativePlatform>Win32</DuckChatNativePlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <DuckChatNativePlatform>x64</DuckChatNativePlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'ARM64'">
+    <DuckChatNativePlatform>ARM64</DuckChatNativePlatform>
+  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
@@ -62,4 +76,15 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
   </PropertyGroup>
+
+  <Target Name="BuildAndCopyDuckChatNative" AfterTargets="Build">
+    <MSBuild
+      Projects="$(DuckChatNativeProject)"
+      Targets="Build"
+      Properties="Configuration=$(Configuration);Platform=$(DuckChatNativePlatform)" />
+    <Copy
+      SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatNativePlatform)\$(Configuration)\DuckChatNative.dll"
+      DestinationFolder="$(TargetDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
 </Project>
