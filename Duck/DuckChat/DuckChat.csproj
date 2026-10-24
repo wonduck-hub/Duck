@@ -78,13 +78,7 @@
   </PropertyGroup>
 
   <Target Name="BuildAndCopyDuckChatServerDLL" AfterTargets="Build">
-    <MSBuild
-      Projects="$(DuckChatServerProject)"
-      Targets="Build"
-      Properties="Configuration=$(Configuration);Platform=$(DuckChatServerPlatform)" />
-    <Copy
-      SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatServerPlatform)\$(Configuration)\DuckChatServer.dll"
-      DestinationFolder="$(TargetDir)"
-      SkipUnchangedFiles="true" />
+    <MSBuild Projects="$(DuckChatServerProject)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(DuckChatServerPlatform)" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatServerPlatform)\$(Configuration)\DuckChatServer.dll" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
   </Target>
 </Project>

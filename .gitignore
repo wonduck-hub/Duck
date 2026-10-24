@@ -69,3 +69,6 @@ Duck/SQLiteBrowser/SQLiteBrowser (Package)/
 
 Duck/CppWinUiTest/CppWinUiTest/
 Duck/CppWinUiTest/CppWinUiTest (Package)/
+
+# DuckChat generated app packages
+/Duck/DuckChat/AppPackages/

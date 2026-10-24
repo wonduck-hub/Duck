@@ -30,7 +30,7 @@ extern "C"
 		return handle;
 	}
 
-	__declspec(dllexport) void __cdecl DuckClientDestroy(DuckClientHandle* handle)
+	__declspec(dllexport) void __cdecl DuckClientDisconnect(DuckClientHandle* handle)
 	{
 		assert(handle != nullptr);
 
