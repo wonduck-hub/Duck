@@ -213,6 +213,7 @@
   <ItemGroup>
     <ClCompile Include="DuckPacket.ixx" />
     <ClCompile Include="DuckChatServer.cpp" />
+    <ClCompile Include="DuckClientHandle.cpp" />
     <ClCompile Include="DuckClient.ixx" />
     <ClCompile Include="DuckServer.ixx" />
   </ItemGroup>
