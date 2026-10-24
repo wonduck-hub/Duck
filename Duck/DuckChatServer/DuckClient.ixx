@@ -11,7 +11,7 @@ module;
 #include <atomic>
 #include <assert.h>
 
-export module TcpClient;
+export module DuckClient;
 
 import DuckPacket;
 
@@ -19,14 +19,14 @@ using namespace std;
 
 namespace Duck
 {
-	export class TcpClient final
+	export class DuckClient final
 	{
 	public:
-		explicit TcpClient(SOCKET socket)
+		explicit DuckClient(SOCKET socket)
 			: mSocket(socket)
 		{}
 
-		~TcpClient()
+		~DuckClient()
 		{
 			EndReceive();
 			CloseSocket();
@@ -40,7 +40,7 @@ namespace Duck
 			}
 
 			mIsReceive = true;
-			mReceiveThread = std::thread(&TcpClient::Receive, this);
+			mReceiveThread = std::thread(&DuckClient::Receive, this);
 		}
 
 		void EndReceive()
@@ -102,7 +102,7 @@ namespace Duck
 			return false;
 		}
 
-		static bool TryConnect(const char* address, const char* port, std::unique_ptr<TcpClient>& outClientOrNull)
+		static bool TryConnect(const char* address, const char* port, std::unique_ptr<DuckClient>& outClientOrNull)
 		{
 			outClientOrNull.reset();
 
@@ -151,7 +151,7 @@ namespace Duck
 				return false;
 			}
 
-			outClientOrNull = std::make_unique<TcpClient>(connectSocket);
+			outClientOrNull = std::make_unique<DuckClient>(connectSocket);
 			return true;
 		}
 

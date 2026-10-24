@@ -11,23 +11,23 @@ module;
 #include <mutex>
 #include <atomic>
 
-export module TcpServer;
+export module DuckServer;
 
 import DuckPacket;
-import TcpClient;
+import DuckClient;
 
 using namespace std;
 
 namespace Duck
 {
-	export class TcpChatServer final
+	export class DuckServer final
 	{
 	public:
-		TcpChatServer()
+		DuckServer()
 		{
 			mClients.reserve(256);
 		}
-		virtual ~TcpChatServer() = default;
+		virtual ~DuckServer() = default;
 
 		bool Init()
 		{
@@ -125,7 +125,7 @@ namespace Duck
 
 			mIsConnectingClient = true;
 			mConnectClientThread =
-				std::thread(&TcpChatServer::ConnectingClient, this);
+				std::thread(&DuckServer::ConnectingClient, this);
 		}
 
 		void EndConnectClient()
@@ -198,7 +198,7 @@ namespace Duck
 
 				{
 					std::scoped_lock<std::mutex> lock(mClientMutext);
-					mClients.emplace_back(std::make_unique<Duck::TcpClient>(clientSocket));
+					mClients.emplace_back(std::make_unique<Duck::DuckClient>(clientSocket));
 					mClients.back()->StartReceive();
 				}
 			}
@@ -213,7 +213,7 @@ namespace Duck
 		std::atomic_bool mIsConnectingClient = false;
 		SOCKET mListenSocket = INVALID_SOCKET;
 
-		std::vector<std::unique_ptr<Duck::TcpClient>> mClients;
+		std::vector<std::unique_ptr<Duck::DuckClient>> mClients;
 		std::mutex mClientMutext;
 		std::thread mConnectClientThread;
 

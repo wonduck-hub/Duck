@@ -5,14 +5,14 @@
 
 #pragma comment(lib, "Ws2_32.lib") // winsock 관련 해더를 가져올 때 VS에서 따로 설정 없이 코드 상으로 링크해야 하는 lib 파일을 설정하는 전처리문
 
-import TcpServer;
+import DuckServer;
 import DuckPacket;
 
 using namespace std;
 
 int main()
 {
-	Duck::TcpChatServer server;
+	Duck::DuckServer server;
 	if (!server.Init())
 	{
 		cout << "Failed to start server." << endl;
