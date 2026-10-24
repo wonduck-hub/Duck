@@ -17,17 +17,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DuckChatNativeProject>$(MSBuildThisFileDirectory)..\DuckChatServer\DuckChatNative.vcxproj</DuckChatNativeProject>
+    <DuckChatServerProject>$(MSBuildThisFileDirectory)..\DuckChatServer\DuckChatServer.vcxproj</DuckChatServerProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DuckChatNativePlatform>Win32</DuckChatNativePlatform>
+    <DuckChatServerPlatform>Win32</DuckChatServerPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DuckChatNativePlatform>x64</DuckChatNativePlatform>
+    <DuckChatServerPlatform>x64</DuckChatServerPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'ARM64'">
-    <DuckChatNativePlatform>ARM64</DuckChatNativePlatform>
+    <DuckChatServerPlatform>ARM64</DuckChatServerPlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -77,13 +77,13 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
   </PropertyGroup>
 
-  <Target Name="BuildAndCopyDuckChatNative" AfterTargets="Build">
+  <Target Name="BuildAndCopyDuckChatServerDLL" AfterTargets="Build">
     <MSBuild
-      Projects="$(DuckChatNativeProject)"
+      Projects="$(DuckChatServerProject)"
       Targets="Build"
-      Properties="Configuration=$(Configuration);Platform=$(DuckChatNativePlatform)" />
+      Properties="Configuration=$(Configuration);Platform=$(DuckChatServerPlatform)" />
     <Copy
-      SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatNativePlatform)\$(Configuration)\DuckChatNative.dll"
+      SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatServerPlatform)\$(Configuration)\DuckChatServer.dll"
       DestinationFolder="$(TargetDir)"
       SkipUnchangedFiles="true" />
   </Target>
