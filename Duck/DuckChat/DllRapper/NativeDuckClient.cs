@@ -1,9 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace DuckChat.DllRapper
 {
-    internal class NativeDuckClient
+    internal class NativeDuckClient : IDisposable
     {
         [DllImport("DuckChatServer.dll",
             EntryPoint = "DuckClientConnect",
@@ -38,5 +39,40 @@ namespace DuckChat.DllRapper
             byte[] outChatBuffer,
             uint bufferCapacity,
             uint outChatLength);
+
+        public NativeDuckClient(string address, string port)
+        {
+            Address = address;
+            Port = port;
+            Handle = DuckClientConnect(address, port);
+        }
+
+        public void Dispose()
+        {
+            DuckClientDisconnect(Handle);
+
+            Handle = IntPtr.Zero;
+            Address = string.Empty;
+            Port = string.Empty;
+        }
+
+        public bool SendChat(byte[] buffer)
+        {
+            Debug.Assert(Handle != IntPtr.Zero);
+
+            bool result = DuckClientSendChat(Handle, buffer, (uint)buffer.Length);
+
+            return result;
+        }
+
+        public bool TryRecvChat(ref byte[] outBuffer, ref uint outChatSize)
+        {
+            outBuffer = new byte[1024];
+            return DuckClientTryRecv(Handle, outBuffer, (uint)outBuffer.Length, outChatSize);
+        }
+
+        public IntPtr Handle { get; private set; }
+        public string Address { get; private set; }
+        public string Port { get; private set; }
     }
 }
