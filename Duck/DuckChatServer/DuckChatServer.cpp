@@ -39,10 +39,23 @@ int main()
 				continue;
 			}
 
+			std::vector<uint8_t> payload = vector<uint8_t>();
+			size_t payloadSize = 0;
+
 			switch (packets[packetIndex].GetCommand())
 			{
 			case Duck::ECommand::CHAT:
-				cout << packets[packetIndex].GetPayload().size() << endl;
+
+				payload = packets[packetIndex].GetPayload();
+				payloadSize = packets[packetIndex].GetPayload().size();
+				cout << payloadSize << endl;
+
+				for (int index = 0; index < payloadSize; ++index)
+				{
+					cout << payload[index];
+				}
+				cout << endl;
+
 				break;
 			default:
 				assert(false && "ECommand 처리 누락 또는 잘못된 명령");

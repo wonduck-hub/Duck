@@ -1,3 +1,6 @@
+using System;
+using System.Diagnostics;
+using DuckChat.DllRapper;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,12 +18,22 @@ namespace DuckChat
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        #region 폼 속성
         public const int MIN_WIDTH = 900;
         public const int MIN_HEIGHT = 600;
+        #endregion
+
+        #region 통신 속성
+        private readonly NativeDuckClient mClient;
+        public const string DEFAULT_ADDRESS = "localhost";
+        public const string DEFAULT_PORT = "27015";
+        #endregion
 
         public MainWindow()
         {
             InitializeComponent();
+
+            mClient = new NativeDuckClient(DEFAULT_ADDRESS, DEFAULT_PORT);
 
             AppWindow.Resize(new SizeInt32(MIN_WIDTH, MIN_HEIGHT));
             SetPresenter();
@@ -66,6 +79,8 @@ namespace DuckChat
 
         private void sendMessage()
         {
+            Debug.Assert(mClient.Handle != IntPtr.Zero);
+
             string message = MessageInput.Text.Trim();
             if (string.IsNullOrWhiteSpace(message))
             {
@@ -93,6 +108,8 @@ namespace DuckChat
             MessageScrollViewer.UpdateLayout();
             MessageScrollViewer.ChangeView(null, MessageScrollViewer.ExtentHeight, null);
             MessageInput.Focus(FocusState.Programmatic);
+
+            mClient.SendChat(message);
         }
     }
 }

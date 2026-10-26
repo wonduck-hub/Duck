@@ -27,7 +27,8 @@
       <Platform Solution="*|x86" Project="x86" />
       <Deploy />
     </Project>
-    <Project Path="DuckChatServer/DuckChatServer.vcxproj" Id="131a8dad-0b7b-40a7-8ac8-c036612a83ca" />
+    <Project Path="DuckChatServer/DuckChatCommon.vcxproj" Id="131a8dad-0b7b-40a7-8ac8-c036612a83ca" />
+    <Project Path="DuckChatServer/DuckChatServer.vcxproj" Id="d0ed02b0-9832-4a1c-bf9d-591be7c793fa" />
     <Project Path="DuckHex/DuckHex.vcxproj" Id="9c2ebf12-05eb-4a59-bc58-25b58ebe31d2" />
     <Project Path="TestPhysics2D/WatermelonGameWindows.csproj" />
     <Project Path="WatermelonGameMobile/WatermelonGameMobile.csproj" Id="850a4334-822d-4065-aeaf-c0f6b012958e">

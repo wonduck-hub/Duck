@@ -6,7 +6,7 @@ namespace DuckChat.DllRapper
 {
     internal class NativeDuckClient : IDisposable
     {
-        [DllImport("DuckChatServer.dll",
+        [DllImport("DuckChatCommon.dll",
             EntryPoint = "DuckClientConnect",
             CallingConvention = CallingConvention.Cdecl,
             CharSet = CharSet.Ansi)]
@@ -15,13 +15,13 @@ namespace DuckChat.DllRapper
             [MarshalAs(UnmanagedType.LPStr)] string port
             );
 
-        [DllImport("DuckChatServer.dll",
+        [DllImport("DuckChatCommon.dll",
             EntryPoint = "DuckClientDisconnect",
             CallingConvention = CallingConvention.Cdecl,
             CharSet = CharSet.Ansi)]
         private static extern void DuckClientDisconnect(IntPtr client);
 
-        [DllImport("DuckChatServer.dll",
+        [DllImport("DuckChatCommon.dll",
             EntryPoint = "DuckClientSendChat",
             CallingConvention = CallingConvention.Cdecl,
             CharSet = CharSet.Ansi)]
@@ -30,7 +30,7 @@ namespace DuckChat.DllRapper
             byte[] chat,
             uint chatSize);
 
-        [DllImport("DuckChatServer.dll",
+        [DllImport("DuckChatCommon.dll",
             EntryPoint = "DuckClientTryRecv",
             CallingConvention = CallingConvention.Cdecl,
             CharSet = CharSet.Ansi)]
@@ -38,7 +38,7 @@ namespace DuckChat.DllRapper
             IntPtr client,
             byte[] outChatBuffer,
             uint bufferCapacity,
-            uint outChatLength);
+            ref uint outChatLength);
 
         public NativeDuckClient(string address, string port)
         {
@@ -56,9 +56,11 @@ namespace DuckChat.DllRapper
             Port = string.Empty;
         }
 
-        public bool SendChat(byte[] buffer)
+        public bool SendChat(string chat)
         {
             Debug.Assert(Handle != IntPtr.Zero);
+
+            byte[] buffer = stringToByteArrya(chat);
 
             bool result = DuckClientSendChat(Handle, buffer, (uint)buffer.Length);
 
@@ -68,7 +70,19 @@ namespace DuckChat.DllRapper
         public bool TryRecvChat(ref byte[] outBuffer, ref uint outChatSize)
         {
             outBuffer = new byte[1024];
-            return DuckClientTryRecv(Handle, outBuffer, (uint)outBuffer.Length, outChatSize);
+            return DuckClientTryRecv(Handle, outBuffer, (uint)outBuffer.Length, ref outChatSize);
+        }
+
+        private byte[] stringToByteArrya(string str)
+        {
+            byte[] result = new byte[str.Length];
+
+            for (int index = 0; index < str.Length; ++index)
+            {
+                result[index] = (byte)str[index];
+            }
+
+            return result;
         }
 
         public IntPtr Handle { get; private set; }

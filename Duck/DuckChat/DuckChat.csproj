@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -17,17 +17,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DuckChatServerProject>$(MSBuildThisFileDirectory)..\DuckChatServer\DuckChatServer.vcxproj</DuckChatServerProject>
+    <DuckChatCommonProject>$(MSBuildThisFileDirectory)..\DuckChatServer\DuckChatCommon.vcxproj</DuckChatCommonProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DuckChatServerPlatform>Win32</DuckChatServerPlatform>
+    <DuckChatCommonPlatform>Win32</DuckChatCommonPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DuckChatServerPlatform>x64</DuckChatServerPlatform>
+    <DuckChatCommonPlatform>x64</DuckChatCommonPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'ARM64'">
-    <DuckChatServerPlatform>ARM64</DuckChatServerPlatform>
+    <DuckChatCommonPlatform>ARM64</DuckChatCommonPlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -77,8 +77,15 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
   </PropertyGroup>
 
-  <Target Name="BuildAndCopyDuckChatServerDLL" AfterTargets="Build">
-    <MSBuild Projects="$(DuckChatServerProject)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(DuckChatServerPlatform)" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\$(DuckChatServerPlatform)\$(Configuration)\DuckChatServer.dll" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  <Target Name="BuildAndCopyDuckChatCommonDLL" AfterTargets="Build">
+    <MSBuild Projects="$(DuckChatCommonProject)"
+			 Targets="Build"
+			 Properties="Configuration=$(Configuration);Platform=$(DuckChatCommonPlatform)" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll"
+		  DestinationFolder="$(TargetDir)"
+		  SkipUnchangedFiles="true" />
+	<Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll"
+		  DestinationFolder="$(TargetDir)AppX"
+		  SkipUnchangedFiles="true" />
   </Target>
 </Project>
