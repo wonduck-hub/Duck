@@ -1,0 +1,40 @@
+name: Weekly C# analysis
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 매주 월요일 00:00 UTC (한국 시간 월요일 09:00)
+  workflow_dispatch: # Actions 탭에서 수동 실행
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build and generate SARIF
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+
+          dotnet build Duck\DuckChat\DuckChat.csproj
+            --configuration Release `
+            -p:EnforceCodeStyleInBuild=true `
+            -p:ErrorLog=artifacts/dlogger.sarif
+
+      - name: Upload SARIF to GitHub Code scanning
+        if: always() && hashFiles('artifacts/dlogger.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: artifacts/dlogger.sarif
+          category: duck-dlogger-csharp
