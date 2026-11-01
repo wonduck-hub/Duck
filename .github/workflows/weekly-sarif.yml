@@ -37,6 +37,8 @@ jobs:
           dotnet build Duck\DuckChat\DuckChat.csproj `
             --configuration Release `
             -p:EnforceCodeStyleInBuild=true `
+            -p:PublishTrimmed=false `
+            -p:GenerateDocumentationFile=true `
             "-p:ErrorLog=$sarifFullPath"
 
       - name: Store SARIF artifact
