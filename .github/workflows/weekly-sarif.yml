@@ -46,16 +46,35 @@ jobs:
             -p:EnforceCodeStyleInBuild=true `
             -p:PublishTrimmed=false `
             -p:GenerateDocumentationFile=true `
-            "-p:ErrorLog=$sarifFullPath,version=2.1"
+            "-p:ErrorLog=$($sarifFullPath),version=2.1"
+
+      - name: Validate SARIF format version
+        id: validate_sarif
+        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        shell: pwsh
+        env:
+          SARIF_FILE_PATH: ${{ steps.analysis.outputs.sarif_path }}
+        run: |
+          try {
+            $sarifDocument = Get-Content -Raw -Encoding utf8 -LiteralPath $env:SARIF_FILE_PATH | ConvertFrom-Json -ErrorAction Stop
+          }
+          catch {
+            throw "Generated SARIF is not valid JSON: $($_.Exception.Message)"
+          }
+          if ($null -eq $sarifDocument -or $sarifDocument.version -cne '2.1.0') {
+            $actualVersion = if ($null -eq $sarifDocument) { '<invalid JSON>' } else { [string]$sarifDocument.version }
+            throw "Expected SARIF version 2.1.0, got '$actualVersion'. Refusing to upload SARIF."
+          }
+          "valid=true" >> $env:GITHUB_OUTPUT
 
       - name: Set up Python
-        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: always() && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
       - name: Upload SARIF ZIP to OneDrive
-        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: always() && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         env:
           MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
           ONEDRIVE_REFRESH_TOKEN: ${{ secrets.ONEDRIVE_REFRESH_TOKEN }}
@@ -65,7 +84,7 @@ jobs:
         run: python SarifOneDrive/scripts/upload_sarif_to_onedrive.py --sarif "${{ steps.analysis.outputs.sarif_path }}"
 
       - name: Store SARIF artifact
-        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: always() && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.analysis.outputs.artifact_name }}
@@ -74,7 +93,7 @@ jobs:
           retention-days: 90
 
       - name: Upload SARIF to GitHub Code scanning
-        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: always() && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ steps.analysis.outputs.sarif_path }}
