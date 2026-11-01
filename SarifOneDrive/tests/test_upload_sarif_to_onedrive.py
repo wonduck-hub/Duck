@@ -28,7 +28,7 @@ class SarifUploadTests(unittest.TestCase):
 
             self.assertEqual(sarif_bytes, uploader.read_sarif(str(sarif_path)))
 
-    def test_rejects_non_sarif_21_json(self):
+    def test_rejects_unsupported_sarif_version(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             sarif_path = Path(temporary_directory) / "invalid.sarif"
             sarif_path.write_text(
@@ -36,11 +36,19 @@ class SarifUploadTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with self.assertRaisesRegex(ValueError, "SARIF 2.1.0"):
+            with self.assertRaisesRegex(ValueError, "supported SARIF version"):
                 uploader.read_sarif(str(sarif_path))
 
+    def test_accepts_sarif_1_0_0(self):
+        sarif_bytes = b'{"version":"1.0.0","runs":[]}'
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            sarif_path = Path(temporary_directory) / "analysis.sarif"
+            sarif_path.write_bytes(sarif_bytes)
+
+            self.assertEqual(sarif_bytes, uploader.read_sarif(str(sarif_path)))
+
     def test_archive_contains_only_original_sarif_bytes(self):
-        sarif_bytes = b'\xef\xbb\xbf{"version":"2.1.0","runs":[]}\r\n'
+        sarif_bytes = b'{"version":"1.0.0","runs":[]}\r\n'
         archive_bytes = uploader.make_archive(
             "owner/repository",
             "2026-11-01",

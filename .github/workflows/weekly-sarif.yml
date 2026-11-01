@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   analyze:
@@ -37,6 +36,13 @@ jobs:
           $sarifFileName = "DuckChat_sarif_$timestamp.sarif"
           $sarifRelativePath = "artifacts/$timestamp/$projectFolderName/$sarifFileName"
           $sarifFullPath = Join-Path $projectDirectory $sarifFileName
+          $compilerResponseFilePath = Join-Path $env:RUNNER_TEMP "sarif-compiler-$timestamp.rsp"
+          $errorLogArgument = '/errorlog:"{0},version=2.1"' -f $sarifFullPath
+          [System.IO.File]::WriteAllText(
+            $compilerResponseFilePath,
+            $errorLogArgument,
+            [System.Text.UTF8Encoding]::new($false)
+          )
           "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
           "artifact_name=duck_sarif_$timestamp" >> $env:GITHUB_OUTPUT
           "sarif_path=$sarifRelativePath" >> $env:GITHUB_OUTPUT
@@ -46,7 +52,7 @@ jobs:
             -p:EnforceCodeStyleInBuild=true `
             -p:PublishTrimmed=false `
             -p:GenerateDocumentationFile=true `
-            "-p:ErrorLog=$($sarifFullPath),version=2.1"
+            "-p:CompilerResponseFile=$compilerResponseFilePath"
 
       - name: Validate SARIF format version
         id: validate_sarif
@@ -61,9 +67,13 @@ jobs:
           catch {
             throw "Generated SARIF is not valid JSON: $($_.Exception.Message)"
           }
-          if ($null -eq $sarifDocument -or $sarifDocument.version -cne '2.1.0') {
+          $supportedSarifVersions = @('1.0.0', '2.1.0')
+          if ($null -eq $sarifDocument -or $supportedSarifVersions -cnotcontains [string]$sarifDocument.version) {
             $actualVersion = if ($null -eq $sarifDocument) { '<invalid JSON>' } else { [string]$sarifDocument.version }
-            throw "Expected SARIF version 2.1.0, got '$actualVersion'. Refusing to upload SARIF."
+            throw "Expected SARIF version 1.0.0 or 2.1.0, got '$actualVersion'. Refusing to upload SARIF."
+          }
+          if ($null -eq $sarifDocument.runs -or $sarifDocument.runs -isnot [System.Array]) {
+            throw "Generated SARIF document must contain a runs array. Refusing to upload SARIF."
           }
           "valid=true" >> $env:GITHUB_OUTPUT
 
@@ -91,10 +101,3 @@ jobs:
           path: artifacts/${{ steps.analysis.outputs.timestamp }}/**
           if-no-files-found: ignore
           retention-days: 90
-
-      - name: Upload SARIF to GitHub Code scanning
-        if: always() && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: ${{ steps.analysis.outputs.sarif_path }}
-          category: duckchat-csharp

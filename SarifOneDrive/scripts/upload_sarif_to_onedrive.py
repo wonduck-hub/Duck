@@ -21,6 +21,7 @@ GRAPH_API = "https://graph.microsoft.com/v1.0"
 SARIF_FOLDER = "SARIF"
 GRAPH_SCOPE = "Files.ReadWrite offline_access"
 SECRET_NAME = "ONEDRIVE_REFRESH_TOKEN"
+SUPPORTED_SARIF_VERSIONS = {"1.0.0", "2.1.0"}
 
 
 def read_sarif(sarif_path):
@@ -30,10 +31,14 @@ def read_sarif(sarif_path):
     try:
         sarif = json.loads(sarif_bytes.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ValueError("Input must be a valid UTF-8 SARIF 2.1.0 document") from error
+        raise ValueError("Input must be a valid UTF-8 SARIF document") from error
 
-    if not isinstance(sarif, dict) or sarif.get("version") != "2.1.0":
-        raise ValueError("Input must be a SARIF 2.1.0 document")
+    if not isinstance(sarif, dict) or sarif.get("version") not in SUPPORTED_SARIF_VERSIONS:
+        raise ValueError(
+            "Input must use a supported SARIF version: {}".format(
+                ", ".join(sorted(SUPPORTED_SARIF_VERSIONS))
+            )
+        )
     if not isinstance(sarif.get("runs"), list):
         raise ValueError("SARIF document must contain a runs array")
     return sarif_bytes
@@ -264,7 +269,11 @@ def run(sarif_path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--sarif", required=True, help="Path to SARIF 2.1.0 input")
+    parser.add_argument(
+        "--sarif",
+        required=True,
+        help="Path to a supported SARIF 1.0.0 or 2.1.0 input",
+    )
     arguments = parser.parse_args()
     run(arguments.sarif)
 

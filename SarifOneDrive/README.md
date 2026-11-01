@@ -3,11 +3,11 @@
 주간 분석 워크플로는 SARIF 파일이 생성되면 Microsoft 개인 계정의 OneDrive
 `SARIF/` 폴더에 ZIP 파일로 업로드합니다. ZIP 안에는 원본 `.sarif` 파일 하나만
 들어 있으며 원본 바이트를 그대로 보존합니다. 업로드 전에 SARIF를 UTF-8(BOM
-포함 가능) JSON으로 읽어 버전 `2.1.0`인지 확인합니다. 대상 폴더가 없으면
-Microsoft Graph API로 자동 생성합니다. 외부 파일명은
+포함 가능) JSON으로 읽어 버전 `1.0.0` 또는 `2.1.0`인지 확인합니다. 대상
+폴더가 없으면 Microsoft Graph API로 자동 생성합니다. 외부 파일명은
 `<저장소>-<이름>_YYYY-MM-DD.zip` 형식입니다. 같은 저장소에서 같은 날짜에
-여러 번 실행하면 같은 ZIP을 덮어씁니다. GitHub SARIF 아티팩트 업로드와
-Code Scanning 업로드도 계속 유지됩니다.
+여러 번 실행하면 같은 ZIP을 덮어씁니다. GitHub SARIF 아티팩트 업로드는
+유지되며 Code Scanning 업로드는 수행하지 않습니다.
 
 ## 사전 준비
 
@@ -63,10 +63,11 @@ Repository permissions의 **Secrets: Read and write** 권한을 설정합니다.
 ## 워크플로 동작 및 토큰 갱신
 
 `.github/workflows/weekly-sarif.yml`은 SARIF 파일이 있을 때 빌드 성공 여부와
-관계없이 ZIP을 OneDrive에 업로드합니다. ZIP 내부에는 검증된 원본 `.sarif`
-파일 하나만 저장됩니다. 동일한 저장소와 UTC 날짜로 생성되는 외부 ZIP
-파일명은 고정이므로 같은 날 여러 번 업로드하면 OneDrive의 이전 파일을
-교체합니다.
+관계없이 ZIP을 OneDrive에 업로드합니다. SARIF `1.0.0` 및 `2.1.0` 형식을
+허용하고, ZIP 내부에는 검증된 원본 `.sarif` 파일 하나만 저장됩니다. 동일한
+저장소와 UTC 날짜로 생성되는 외부 ZIP 파일명은 고정이므로 같은 날 여러 번
+업로드하면 OneDrive의 이전 파일을 교체합니다. GitHub SARIF 아티팩트 업로드는
+유지하며 Code Scanning 업로드는 수행하지 않습니다.
 
 업로드 대상은 OneDrive의 `SARIF/` 폴더입니다. 스크립트는 Microsoft Graph에서
 폴더를 확인하고, 없으면 생성한 뒤 파일을 업로드합니다.
