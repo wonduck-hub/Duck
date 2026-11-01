@@ -1,4 +1,4 @@
-name: Weekly C# analysis
+name: Weekly DuckChat analysis
 
 on:
   schedule:
@@ -20,21 +20,36 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 8.0.x
 
       - name: Build and generate SARIF
+        id: analysis
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
 
-          dotnet build Duck\DuckChat\DuckChat.csproj
+          $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
+          $sarifPath = "artifacts/duckchat-$timestamp.sarif"
+          "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
+          "sarif_path=$sarifPath" >> $env:GITHUB_OUTPUT
+
+          dotnet build Duck\DuckChat\DuckChat.csproj `
             --configuration Release `
             -p:EnforceCodeStyleInBuild=true `
-            -p:ErrorLog=artifacts/dlogger.sarif
+            "-p:ErrorLog=$sarifPath"
+
+      - name: Store SARIF artifact
+        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: duckchat-sarif-${{ steps.analysis.outputs.timestamp }}
+          path: ${{ steps.analysis.outputs.sarif_path }}
+          if-no-files-found: ignore
+          retention-days: 90
 
       - name: Upload SARIF to GitHub Code scanning
-        if: always() && hashFiles('artifacts/dlogger.sarif') != ''
+        if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: artifacts/dlogger.sarif
-          category: duck-dlogger-csharp
+          sarif_file: ${{ steps.analysis.outputs.sarif_path }}
+          category: duckchat-csharp
