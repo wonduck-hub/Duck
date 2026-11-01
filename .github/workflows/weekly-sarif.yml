@@ -91,6 +91,7 @@ jobs:
           GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
+          SARIF_TIMESTAMP: ${{ steps.analysis.outputs.timestamp }}
         run: python SarifOneDrive/scripts/upload_sarif_to_onedrive.py --sarif "${{ steps.analysis.outputs.sarif_path }}"
 
       - name: Store SARIF artifact

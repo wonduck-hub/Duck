@@ -44,19 +44,25 @@ def read_sarif(sarif_path):
     return sarif_bytes
 
 
-def make_filename(repository, date_string):
-    safe_repository = re.sub(r"[^A-Za-z0-9._-]+", "-", repository.replace("/", "-"))
-    safe_repository = safe_repository.strip(".-_")
-    if not safe_repository:
-        raise ValueError("GITHUB_REPOSITORY does not contain a valid filename")
-    return "{}_{}.zip".format(safe_repository, date_string)
+def make_filename(project_name, timestamp):
+    safe_project_name = re.sub(r"[^A-Za-z0-9._-]+", "-", project_name)
+    safe_project_name = safe_project_name.strip(".-_")
+    if not safe_project_name:
+        raise ValueError("Project name does not contain a valid filename")
+    return "{}_sarif_{}.zip".format(safe_project_name, timestamp)
 
 
-def make_archive(repository, date_string, sarif_bytes):
-    base_name = make_filename(repository, date_string)[:-4]
+def make_archive(project_name, timestamp, sarif_bytes):
+    safe_project_name = re.sub(r"[^A-Za-z0-9._-]+", "-", project_name)
+    safe_project_name = safe_project_name.strip(".-_")
+    if not safe_project_name:
+        raise ValueError("Project name does not contain a valid archive path")
+
+    sarif_file_name = "DuckChat_sarif_{}.sarif".format(timestamp)
+    archive_path = "{}/{}".format(safe_project_name, sarif_file_name)
     archive_buffer = BytesIO()
     with ZipFile(archive_buffer, mode="w", compression=ZIP_DEFLATED) as archive:
-        archive.writestr(base_name + ".sarif", sarif_bytes)
+        archive.writestr(archive_path, sarif_bytes)
     return archive_buffer.getvalue()
 
 
@@ -254,8 +260,12 @@ def run(sarif_path):
     sarif_bytes = read_sarif(sarif_path)
 
     now = datetime.now(timezone.utc)
-    filename = make_filename(repository, now.strftime("%Y-%m-%d"))
-    archive_bytes = make_archive(repository, now.strftime("%Y-%m-%d"), sarif_bytes)
+    timestamp = os.environ.get("SARIF_TIMESTAMP", "").strip()
+    if not timestamp:
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+    project_name = "DuckChat_{}".format(timestamp)
+    filename = make_filename("DuckChat", timestamp)
+    archive_bytes = make_archive(project_name, timestamp, sarif_bytes)
 
     access_token, rotated_refresh_token = refresh_access_token(client_id, refresh_token)
     ensure_sarif_folder(access_token)

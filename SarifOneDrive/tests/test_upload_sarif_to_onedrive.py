@@ -47,22 +47,26 @@ class SarifUploadTests(unittest.TestCase):
 
             self.assertEqual(sarif_bytes, uploader.read_sarif(str(sarif_path)))
 
-    def test_archive_contains_only_original_sarif_bytes(self):
+    def test_archive_restores_timestamped_project_structure(self):
         sarif_bytes = b'{"version":"1.0.0","runs":[]}\r\n'
         archive_bytes = uploader.make_archive(
-            "owner/repository",
-            "2026-11-01",
+            "DuckChat_20261102-004500",
+            "20261102-004500",
             sarif_bytes,
         )
 
         with ZipFile(BytesIO(archive_bytes), "r") as archive:
-            self.assertEqual(["owner-repository_2026-11-01.sarif"], archive.namelist())
-            self.assertEqual(sarif_bytes, archive.read(archive.namelist()[0]))
+            expected_path = (
+                "DuckChat_20261102-004500/"
+                "DuckChat_sarif_20261102-004500.sarif"
+            )
+            self.assertEqual([expected_path], archive.namelist())
+            self.assertEqual(sarif_bytes, archive.read(expected_path))
 
-    def test_filename_uses_repository_date_and_zip_extension(self):
+    def test_filename_uses_project_name_and_timestamp(self):
         self.assertEqual(
-            "owner-repo-Duck_2026-11-01.zip",
-            uploader.make_filename("owner/repo-Duck", "2026-11-01"),
+            "DuckChat_sarif_20261102-004500.zip",
+            uploader.make_filename("DuckChat", "20261102-004500"),
         )
 
 
