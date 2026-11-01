@@ -29,14 +29,15 @@ jobs:
           New-Item -ItemType Directory -Force artifacts | Out-Null
 
           $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
-          $sarifPath = "artifacts/duckchat-$timestamp.sarif"
+          $sarifRelativePath = "artifacts/duckchat-$timestamp.sarif"
+          $sarifFullPath = Join-Path (Resolve-Path artifacts).Path "duckchat-$timestamp.sarif"
           "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
-          "sarif_path=$sarifPath" >> $env:GITHUB_OUTPUT
+          "sarif_path=$sarifRelativePath" >> $env:GITHUB_OUTPUT
 
           dotnet build Duck\DuckChat\DuckChat.csproj `
             --configuration Release `
             -p:EnforceCodeStyleInBuild=true `
-            "-p:ErrorLog=$sarifPath"
+            "-p:ErrorLog=$sarifFullPath"
 
       - name: Store SARIF artifact
         if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
