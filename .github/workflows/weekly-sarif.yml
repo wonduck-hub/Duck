@@ -29,9 +29,16 @@ jobs:
           New-Item -ItemType Directory -Force artifacts | Out-Null
 
           $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
-          $sarifRelativePath = "artifacts/duckchat-$timestamp.sarif"
-          $sarifFullPath = Join-Path (Resolve-Path artifacts).Path "duckchat-$timestamp.sarif"
+          $projectFolderName = "DuckChat_$timestamp"
+          $artifactDirectory = Join-Path (Resolve-Path artifacts).Path $timestamp
+          $projectDirectory = Join-Path $artifactDirectory $projectFolderName
+          New-Item -ItemType Directory -Force $projectDirectory | Out-Null
+
+          $sarifFileName = "DuckChat_sarif_$timestamp.sarif"
+          $sarifRelativePath = "artifacts/$timestamp/$projectFolderName/$sarifFileName"
+          $sarifFullPath = Join-Path $projectDirectory $sarifFileName
           "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
+          "artifact_name=duck_sarif_$timestamp" >> $env:GITHUB_OUTPUT
           "sarif_path=$sarifRelativePath" >> $env:GITHUB_OUTPUT
 
           dotnet build Duck\DuckChat\DuckChat.csproj `
@@ -45,8 +52,8 @@ jobs:
         if: always() && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: actions/upload-artifact@v4
         with:
-          name: duckchat-sarif-${{ steps.analysis.outputs.timestamp }}
-          path: ${{ steps.analysis.outputs.sarif_path }}
+          name: ${{ steps.analysis.outputs.artifact_name }}
+          path: artifacts/${{ steps.analysis.outputs.timestamp }}/**
           if-no-files-found: ignore
           retention-days: 90
 
