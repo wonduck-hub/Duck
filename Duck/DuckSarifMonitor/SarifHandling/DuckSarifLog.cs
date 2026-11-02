@@ -17,9 +17,16 @@ namespace DuckSarifMonitor.SarifHandling
             Data = data;
             Project = sarifType;
         }
+
         public DuckSarifLog(FileInfo sarifFile, ESarifProjectType sarifType)
         {
             Data = SarifLog.Load(sarifFile.FullName);
+            Project = sarifType;
+        }
+
+        public DuckSarifLog(string sarifFilePath, ESarifProjectType sarifType)
+        {
+            Data = SarifLog.Load(sarifFilePath);
             Project = sarifType;
         }
 
