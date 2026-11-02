@@ -3,7 +3,7 @@
 주간 분석 워크플로는 SARIF 파일이 생성되면 Microsoft 개인 계정의 OneDrive
 `SARIF/` 폴더에 ZIP 파일로 업로드합니다. ZIP 안에는 원본 `.sarif` 파일 하나만
 들어 있으며 원본 바이트를 그대로 보존합니다. 업로드 전에 SARIF를 UTF-8(BOM
-포함 가능) JSON으로 읽어 버전 `1.0.0` 또는 `2.1.0`인지 확인합니다. 대상
+포함 가능) JSON으로 읽어 버전이 `2.1.0`인지 확인합니다. 대상
 폴더가 없으면 Microsoft Graph API로 자동 생성합니다. workflow 빌드 단계가
 만든 동일한 timestamp를 ZIP 이름과 내부 경로에 사용합니다. 외부 파일명은
 `DuckChat_sarif_<yyyyMMdd-HHmmss>.zip` 형식이며, 내부 파일 경로는
@@ -66,10 +66,14 @@ Repository permissions의 **Secrets: Read and write** 권한을 설정합니다.
 ## 워크플로 동작 및 토큰 갱신
 
 `.github/workflows/weekly-sarif.yml`은 SARIF 파일이 있을 때 빌드 성공 여부와
-관계없이 ZIP을 OneDrive에 업로드합니다. SARIF `1.0.0` 및 `2.1.0` 형식을
-허용하고, ZIP 내부에는 검증된 원본 `.sarif` 파일 하나만 저장됩니다. 빌드가
+관계없이 ZIP을 OneDrive에 업로드합니다. SARIF `2.1.0` 형식만 허용하며,
+ZIP 내부에는 검증된 원본 `.sarif` 파일 하나만 저장됩니다. 빌드가
 기록한 timestamp를 workflow 환경 변수로 업로더에 전달하여 SARIF 원본 경로,
 외부 ZIP 파일명, 내부 디렉터리와 SARIF 파일명이 일치하게 유지됩니다.
+빌드는 `CompilerResponseFile`로 Roslyn에 `/errorlog:...,version=2.1`을
+전달하고, 진단 로그의 Csc `ResponseFiles` 항목에서 해당 response file이
+사용됐는지 검사합니다. SARIF 검사 게이트는 JSON, `runs` 및 정확한 버전
+`2.1.0`을 확인하며, 이 검사를 통과하지 않으면 업로드하지 않습니다.
 GitHub SARIF 아티팩트 업로드는 유지하며 Code Scanning 업로드는 수행하지
 않습니다.
 

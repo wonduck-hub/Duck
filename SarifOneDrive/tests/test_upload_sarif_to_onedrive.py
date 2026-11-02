@@ -36,19 +36,20 @@ class SarifUploadTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with self.assertRaisesRegex(ValueError, "supported SARIF version"):
+            with self.assertRaisesRegex(ValueError, "SARIF version 2.1.0"):
                 uploader.read_sarif(str(sarif_path))
 
-    def test_accepts_sarif_1_0_0(self):
+    def test_rejects_sarif_1_0_0(self):
         sarif_bytes = b'{"version":"1.0.0","runs":[]}'
         with tempfile.TemporaryDirectory() as temporary_directory:
             sarif_path = Path(temporary_directory) / "analysis.sarif"
             sarif_path.write_bytes(sarif_bytes)
 
-            self.assertEqual(sarif_bytes, uploader.read_sarif(str(sarif_path)))
+            with self.assertRaisesRegex(ValueError, "SARIF version 2.1.0"):
+                uploader.read_sarif(str(sarif_path))
 
     def test_archive_restores_timestamped_project_structure(self):
-        sarif_bytes = b'{"version":"1.0.0","runs":[]}\r\n'
+        sarif_bytes = b'{"version":"2.1.0","runs":[]}\r\n'
         archive_bytes = uploader.make_archive(
             "DuckChat_20261102-004500",
             "20261102-004500",
