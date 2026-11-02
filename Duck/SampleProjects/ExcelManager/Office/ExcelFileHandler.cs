@@ -1,15 +1,12 @@
-﻿using System;
 using Excel = Microsoft.Office.Interop.Excel;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Data.Common;
 
 namespace Duck.OfficeAutomationModule.Office
 {
     public class ExcelFileHandler : IDisposable
     {
-        private Excel.Application mExcelApp;
-        private Excel.Workbook mWorkbook;
+        private readonly Excel.Application mExcelApp;
+        private readonly Excel.Workbook mWorkbook;
 
         // 일단 이 배관들만 사용한다고 가정
         private static readonly string[] MS_TABLE_HEAD = { "126", "127", "128", "129", "130", "131" };
@@ -17,17 +14,18 @@ namespace Duck.OfficeAutomationModule.Office
 
         static public bool IsExcelInstalled()
         {
-            try { 
+            try
+            {
                 Type excelType = Type.GetTypeFromProgID("Excel.Application");
-                if (excelType == null) 
-                { 
-                    return false; 
-                } 
-                dynamic excelApp = Activator.CreateInstance(excelType); 
-                return true; 
+                if (excelType == null)
+                {
+                    return false;
+                }
+                dynamic excelApp = Activator.CreateInstance(excelType);
+                return true;
             }
-            catch 
-            { 
+            catch
+            {
                 return false;
             }
         }
@@ -63,7 +61,7 @@ namespace Duck.OfficeAutomationModule.Office
             Excel.Range usedRange = experimentWorksheet.UsedRange;
 
             bool isTableFound = false;
-            
+
             string sourceTableStartAddress = string.Empty;
             string sourceTableEndAddress = string.Empty;
             Excel.Range sourceTableStartCell = null;
@@ -171,8 +169,8 @@ namespace Duck.OfficeAutomationModule.Office
             Debug.Assert(column1 > 0);
             Debug.Assert(column2 > 0);
 
-            string formulaString = 
-                "=" + ((Excel.Range)experimentWorksheet.Cells[startCell.Row + 1, column1]).Address[false, false] + 
+            string formulaString =
+                "=" + ((Excel.Range)experimentWorksheet.Cells[startCell.Row + 1, column1]).Address[false, false] +
                 "-" + ((Excel.Range)experimentWorksheet.Cells[startCell.Row + 1, column2]).Address[false, false];
 
             Excel.Range sourceRange = experimentWorksheet.Cells[startCell.Row + 1, endCell.Column];

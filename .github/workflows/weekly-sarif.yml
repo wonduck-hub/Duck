@@ -2,7 +2,7 @@ name: Weekly DuckChat analysis
 
 on:
   schedule:
-    - cron: "0 0 * * 1" # 매주 월요일 00:00 UTC (한국 시간 월요일 09:00)
+    - cron: "0 0 1 * *" 
   workflow_dispatch: # Actions 탭에서 수동 실행
 
 permissions:
