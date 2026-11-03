@@ -14,7 +14,7 @@ namespace DuckSarifMonitor.SarifHandling
 
             try
             {
-                temp = DuckSarifLog.Load(sarifFile, ESarifProjectType.NONE);
+                temp = DuckSarifLog.Load(sarifFile, ESarifProjectID.NONE);
             }
             catch
             {

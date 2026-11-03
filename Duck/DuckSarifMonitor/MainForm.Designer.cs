@@ -30,7 +30,7 @@ namespace DuckSarifMonitor
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             splitContainerMain = new SplitContainer();
-            buttonSingleSarifDashboard = new Button();
+            buttonSingleSingleSarifDashboard = new Button();
             panelRight = new Panel();
             panelSingleDashboard = new Panel();
             dashboardLayout = new TableLayoutPanel();
@@ -38,6 +38,7 @@ namespace DuckSarifMonitor
             toolStripLabelFile = new ToolStripLabel();
             toolStripTextBoxSarifFilePath = new ToolStripTextBox();
             toolStripSeparator2 = new ToolStripSeparator();
+            toolStripButtonLoadSarifFile = new ToolStripButton();
             mSarifDashboardView = new SarifDashboardView();
             statusStrip1 = new StatusStrip();
             toolStripStatusLabelStatus = new ToolStripStatusLabel();
@@ -54,7 +55,7 @@ namespace DuckSarifMonitor
             tabControl = new TabControl();
             tabPageSarifView = new TabPage();
             tabPageProjectView = new TabPage();
-            toolStripButtonLoadSarifFile = new ToolStripButton();
+            buttonQualityTrends = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainerMain).BeginInit();
             splitContainerMain.Panel1.SuspendLayout();
             splitContainerMain.Panel2.SuspendLayout();
@@ -80,7 +81,8 @@ namespace DuckSarifMonitor
             // 
             // splitContainerMain.Panel1
             // 
-            splitContainerMain.Panel1.Controls.Add(buttonSingleSarifDashboard);
+            splitContainerMain.Panel1.Controls.Add(buttonQualityTrends);
+            splitContainerMain.Panel1.Controls.Add(buttonSingleSingleSarifDashboard);
             // 
             // splitContainerMain.Panel2
             // 
@@ -90,18 +92,18 @@ namespace DuckSarifMonitor
             splitContainerMain.SplitterWidth = 2;
             splitContainerMain.TabIndex = 1;
             // 
-            // buttonSingleSarifDashboard
+            // buttonSingleSingleSarifDashboard
             // 
-            buttonSingleSarifDashboard.Dock = DockStyle.Top;
-            buttonSingleSarifDashboard.Font = new Font("Segoe UI", 14F);
-            buttonSingleSarifDashboard.Location = new Point(0, 0);
-            buttonSingleSarifDashboard.Margin = new Padding(4, 3, 4, 3);
-            buttonSingleSarifDashboard.Name = "buttonSingleSarifDashboard";
-            buttonSingleSarifDashboard.Size = new Size(204, 57);
-            buttonSingleSarifDashboard.TabIndex = 0;
-            buttonSingleSarifDashboard.Text = "Sarif Dashboard";
-            buttonSingleSarifDashboard.UseVisualStyleBackColor = true;
-            buttonSingleSarifDashboard.Click += buttonSingleDashboard_Click;
+            buttonSingleSingleSarifDashboard.Dock = DockStyle.Top;
+            buttonSingleSingleSarifDashboard.Font = new Font("Segoe UI", 14F);
+            buttonSingleSingleSarifDashboard.Location = new Point(0, 0);
+            buttonSingleSingleSarifDashboard.Margin = new Padding(4, 3, 4, 3);
+            buttonSingleSingleSarifDashboard.Name = "buttonSingleSingleSarifDashboard";
+            buttonSingleSingleSarifDashboard.Size = new Size(204, 57);
+            buttonSingleSingleSarifDashboard.TabIndex = 0;
+            buttonSingleSingleSarifDashboard.Text = "Single Dashboard";
+            buttonSingleSingleSarifDashboard.UseVisualStyleBackColor = true;
+            buttonSingleSingleSarifDashboard.Click += buttonSingleDashboard_Click;
             // 
             // panelRight
             // 
@@ -164,6 +166,16 @@ namespace DuckSarifMonitor
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new Size(6, 25);
             // 
+            // toolStripButtonLoadSarifFile
+            // 
+            toolStripButtonLoadSarifFile.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            toolStripButtonLoadSarifFile.Image = (Image)resources.GetObject("toolStripButtonLoadSarifFile.Image");
+            toolStripButtonLoadSarifFile.ImageTransparentColor = Color.Magenta;
+            toolStripButtonLoadSarifFile.Name = "toolStripButtonLoadSarifFile";
+            toolStripButtonLoadSarifFile.Size = new Size(23, 22);
+            toolStripButtonLoadSarifFile.Text = "Load Sarif";
+            toolStripButtonLoadSarifFile.Click += loadSARIFToolStripMenuItem_Click;
+            // 
             // mSarifDashboardView
             // 
             mSarifDashboardView.BackColor = Color.FromArgb(246, 248, 250);
@@ -212,13 +224,13 @@ namespace DuckSarifMonitor
             // loadDBToolStripMenuItem
             // 
             loadDBToolStripMenuItem.Name = "loadDBToolStripMenuItem";
-            loadDBToolStripMenuItem.Size = new Size(180, 22);
+            loadDBToolStripMenuItem.Size = new Size(128, 22);
             loadDBToolStripMenuItem.Text = "Load DB";
             // 
             // exportDBToolStripMenuItem
             // 
             exportDBToolStripMenuItem.Name = "exportDBToolStripMenuItem";
-            exportDBToolStripMenuItem.Size = new Size(180, 22);
+            exportDBToolStripMenuItem.Size = new Size(128, 22);
             exportDBToolStripMenuItem.Text = "Export DB";
             // 
             // aboutToolStripMenuItem
@@ -301,15 +313,18 @@ namespace DuckSarifMonitor
             tabPageProjectView.Text = "ProjectView";
             tabPageProjectView.UseVisualStyleBackColor = true;
             // 
-            // toolStripButtonLoadSarifFile
+            // buttonQualityTrends
             // 
-            toolStripButtonLoadSarifFile.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            toolStripButtonLoadSarifFile.Image = (Image)resources.GetObject("toolStripButtonLoadSarifFile.Image");
-            toolStripButtonLoadSarifFile.ImageTransparentColor = Color.Magenta;
-            toolStripButtonLoadSarifFile.Name = "toolStripButtonLoadSarifFile";
-            toolStripButtonLoadSarifFile.Size = new Size(23, 22);
-            toolStripButtonLoadSarifFile.Text = "Load Sarif";
-            toolStripButtonLoadSarifFile.Click += loadSARIFToolStripMenuItem_Click;
+            buttonQualityTrends.Dock = DockStyle.Top;
+            buttonQualityTrends.Font = new Font("Segoe UI", 14F);
+            buttonQualityTrends.Location = new Point(0, 57);
+            buttonQualityTrends.Margin = new Padding(4, 3, 4, 3);
+            buttonQualityTrends.Name = "buttonQualityTrends";
+            buttonQualityTrends.Size = new Size(204, 57);
+            buttonQualityTrends.TabIndex = 1;
+            buttonQualityTrends.Text = "QualityTrends";
+            buttonQualityTrends.UseVisualStyleBackColor = true;
+            buttonQualityTrends.Click += buttonQualityTrends_Click;
             // 
             // MainForm
             // 
@@ -366,7 +381,7 @@ namespace DuckSarifMonitor
         private TabPage tabPageProjectView;
         private ToolStripTextBox toolStripTextBoxDbPath;
         private ToolStripSeparator toolStripSeparator1;
-        private Button buttonSingleSarifDashboard;
+        private Button buttonSingleSingleSarifDashboard;
         private Panel panelSingleDashboard;
         private TableLayoutPanel dashboardLayout;
         private SarifDashboardView mSarifDashboardView;
@@ -375,5 +390,6 @@ namespace DuckSarifMonitor
         private ToolStripTextBox toolStripTextBoxSarifFilePath;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripButton toolStripButtonLoadSarifFile;
+        private Button buttonQualityTrends;
     }
 }

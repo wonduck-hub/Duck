@@ -22,7 +22,7 @@ namespace DuckSarifMonitor
             {
                 try
                 {
-                    DuckSarifLog loadedLog = new DuckSarifLog(ofd.FileName, ESarifProjectType.NONE);
+                    DuckSarifLog loadedLog = new DuckSarifLog(ofd.FileName, ESarifProjectID.NONE);
                     mSarifDashboardView.LoadSarif(ofd.FileName);
                     SarifLogOrNull = loadedLog;
                     SarifLogPath = ofd.FileName;
@@ -54,6 +54,11 @@ namespace DuckSarifMonitor
         }
 
         private void buttonSingleDashboard_Click(object sender, EventArgs e)
+        {
+            panelSingleDashboard.BringToFront();
+        }
+
+        private void buttonQualityTrends_Click(object sender, EventArgs e)
         {
             panelSingleDashboard.BringToFront();
         }
