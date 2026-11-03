@@ -1,9 +1,11 @@
+
 name: Weekly DuckChat analysis
 
 on:
   schedule:
-    - cron: "0 0 1 * *" 
-  workflow_dispatch: # Actions 탭에서 수동 실행
+    # 매월 1일 오전 9시 (KST)
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,6 +13,10 @@ permissions:
 jobs:
   analyze:
     runs-on: windows-latest
+
+    env:
+      PROJECT_NAME: DuckChat
+      PROJECT_PATH: Duck/DuckChat/DuckChat.csproj
 
     steps:
       - name: Check out repository
@@ -28,44 +34,57 @@ jobs:
           New-Item -ItemType Directory -Force artifacts | Out-Null
 
           $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss')
-          $projectFolderName = "DuckChat_$timestamp"
+          $projectName = $env:PROJECT_NAME
+
           $artifactDirectory = Join-Path (Resolve-Path artifacts).Path $timestamp
-          $projectDirectory = Join-Path $artifactDirectory $projectFolderName
+          $projectDirectory = Join-Path $artifactDirectory $projectName
+
           New-Item -ItemType Directory -Force $projectDirectory | Out-Null
 
-          $sarifFileName = "DuckChat_sarif_$timestamp.sarif"
-          $sarifRelativePath = "artifacts/$timestamp/$projectFolderName/$sarifFileName"
+          $sarifFileName = "${projectName}_sarif_$timestamp.sarif"
+          $sarifRelativePath = "artifacts/$timestamp/$projectName/$sarifFileName"
           $sarifFullPath = Join-Path $projectDirectory $sarifFileName
+
           $compilerResponseFilePath = Join-Path $env:RUNNER_TEMP "sarif-compiler-$timestamp.rsp"
           $compilerDiagnosticLogPath = Join-Path $env:RUNNER_TEMP "sarif-build-$timestamp.log"
+
           $errorLogArgument = '/errorlog:"{0}",version=2.1' -f $sarifFullPath
+
           [System.IO.File]::WriteAllText(
             $compilerResponseFilePath,
             $errorLogArgument,
             [System.Text.UTF8Encoding]::new($false)
           )
+
           if ([System.IO.File]::ReadAllText($compilerResponseFilePath) -cne $errorLogArgument) {
             throw "Compiler response file does not contain the required SARIF 2.1 argument."
           }
+
           "timestamp=$timestamp" >> $env:GITHUB_OUTPUT
-          "artifact_name=duck_sarif_$timestamp" >> $env:GITHUB_OUTPUT
+          "artifact_name=${projectName}_sarif_$timestamp" >> $env:GITHUB_OUTPUT
           "sarif_path=$sarifRelativePath" >> $env:GITHUB_OUTPUT
 
-          dotnet build Duck\DuckChat\DuckChat.csproj `
+          dotnet build $env:PROJECT_PATH `
             --configuration Release `
             -p:EnforceCodeStyleInBuild=true `
             -p:PublishTrimmed=false `
             -p:GenerateDocumentationFile=true `
             "-p:CompilerResponseFile=$compilerResponseFilePath" `
             -v:diag *> $compilerDiagnosticLogPath
+
           $buildExitCode = $LASTEXITCODE
+
           $escapedResponseFilePath = [regex]::Escape($compilerResponseFilePath)
           $cscResponseFilePattern = 'ResponseFiles\s*=\s*' + $escapedResponseFilePath
+
           if ([System.IO.File]::ReadAllText($compilerDiagnosticLogPath) -notmatch $cscResponseFilePattern) {
             throw "MSBuild diagnostics do not confirm that the Csc task received the SARIF response file."
           }
+
           Write-Host "MSBuild diagnostics confirm Csc received $compilerResponseFilePath"
+
           "compiler_configured=true" >> $env:GITHUB_OUTPUT
+
           if ($buildExitCode -ne 0) {
             Get-Content -Tail 80 -LiteralPath $compilerDiagnosticLogPath
             exit $buildExitCode
@@ -73,34 +92,50 @@ jobs:
 
       - name: Validate SARIF format version
         id: validate_sarif
-        if: always() && steps.analysis.outputs.compiler_configured == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: >-
+          always() &&
+          steps.analysis.outputs.compiler_configured == 'true' &&
+          steps.analysis.outputs.sarif_path != '' &&
+          hashFiles(steps.analysis.outputs.sarif_path) != ''
         shell: pwsh
         env:
           SARIF_FILE_PATH: ${{ steps.analysis.outputs.sarif_path }}
         run: |
           try {
-            $sarifDocument = Get-Content -Raw -Encoding utf8 -LiteralPath $env:SARIF_FILE_PATH | ConvertFrom-Json -ErrorAction Stop
+            $sarifDocument = Get-Content -Raw -Encoding utf8 -LiteralPath $env:SARIF_FILE_PATH |
+              ConvertFrom-Json -ErrorAction Stop
           }
           catch {
             throw "Generated SARIF is not valid JSON: $($_.Exception.Message)"
           }
+
           if ($null -eq $sarifDocument -or [string]$sarifDocument.version -cne '2.1.0') {
-            $actualVersion = if ($null -eq $sarifDocument) { '<invalid JSON>' } else { [string]$sarifDocument.version }
-            throw "Expected SARIF version 2.1.0, got '$actualVersion'. Refusing to upload SARIF."
+            throw "Expected SARIF version 2.1.0. Refusing to upload SARIF."
           }
+
           if ($null -eq $sarifDocument.runs -or $sarifDocument.runs -isnot [System.Array]) {
-            throw "Generated SARIF document must contain a runs array. Refusing to upload SARIF."
+            throw "Generated SARIF document must contain a runs array."
           }
+
           "valid=true" >> $env:GITHUB_OUTPUT
 
       - name: Set up Python
-        if: always() && steps.analysis.outputs.compiler_configured == 'true' && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: >-
+          always() &&
+          steps.analysis.outputs.compiler_configured == 'true' &&
+          steps.validate_sarif.outputs.valid == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
 
-      - name: Upload SARIF ZIP to OneDrive
-        if: always() && steps.analysis.outputs.compiler_configured == 'true' && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+      - name: Upload SARIF to OneDrive
+        if: >-
+          always() &&
+          steps.analysis.outputs.compiler_configured == 'true' &&
+          steps.validate_sarif.outputs.valid == 'true' &&
+          steps.analysis.outputs.sarif_path != '' &&
+          hashFiles(steps.analysis.outputs.sarif_path) != ''
+        shell: pwsh
         env:
           MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
           ONEDRIVE_REFRESH_TOKEN: ${{ secrets.ONEDRIVE_REFRESH_TOKEN }}
@@ -108,10 +143,18 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
           SARIF_TIMESTAMP: ${{ steps.analysis.outputs.timestamp }}
-        run: python SarifOneDrive/scripts/upload_sarif_to_onedrive.py --sarif "${{ steps.analysis.outputs.sarif_path }}"
+        run: |
+          python SarifOneDrive/scripts/upload_sarif_to_onedrive.py `
+            --sarif "${{ steps.analysis.outputs.sarif_path }}" `
+            --project "$env:PROJECT_NAME"
 
       - name: Store SARIF artifact
-        if: always() && steps.analysis.outputs.compiler_configured == 'true' && steps.validate_sarif.outputs.valid == 'true' && steps.analysis.outputs.sarif_path != '' && hashFiles(steps.analysis.outputs.sarif_path) != ''
+        if: >-
+          always() &&
+          steps.analysis.outputs.compiler_configured == 'true' &&
+          steps.validate_sarif.outputs.valid == 'true' &&
+          steps.analysis.outputs.sarif_path != '' &&
+          hashFiles(steps.analysis.outputs.sarif_path) != ''
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.analysis.outputs.artifact_name }}
