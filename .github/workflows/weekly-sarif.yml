@@ -1,14 +1,17 @@
-
 name: Weekly DuckChat analysis
 
 on:
   schedule:
-    # 매월 1일 오전 9시 (KST)
+    # Every month on the 1st at 09:00 KST (00:00 UTC)
     - cron: "0 0 1 * *"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: onedrive-sarif-report
+  cancel-in-progress: false
 
 jobs:
   analyze:
@@ -126,9 +129,18 @@ jobs:
           steps.validate_sarif.outputs.valid == 'true'
         uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: '3.12'
 
-      - name: Upload SARIF to OneDrive
+      - name: Install Excel report dependency
+        if: >-
+          always() &&
+          steps.analysis.outputs.compiler_configured == 'true' &&
+          steps.validate_sarif.outputs.valid == 'true'
+        shell: pwsh
+        run: |
+          python -m pip install "openpyxl>=3.1,<4"
+
+      - name: Upload SARIF and generate Excel reports
         if: >-
           always() &&
           steps.analysis.outputs.compiler_configured == 'true' &&
@@ -144,7 +156,7 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
           SARIF_TIMESTAMP: ${{ steps.analysis.outputs.timestamp }}
         run: |
-          python SarifOneDrive/scripts/upload_sarif_to_onedrive.py `
+          python SarifOneDrive/scripts/sarif_onedrive_report.py `
             --sarif "${{ steps.analysis.outputs.sarif_path }}" `
             --project "$env:PROJECT_NAME"
 
