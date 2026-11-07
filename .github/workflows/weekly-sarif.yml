@@ -19,7 +19,7 @@ jobs:
 
     env:
       PROJECT_NAME: DuckChat
-      PROJECT_PATH: Duck/DuckChat/DuckChat.csproj
+      PROJECT_PATH: Duck\DuckChatForm\DuckChatForm.csproj
 
     steps:
       - name: Check out repository

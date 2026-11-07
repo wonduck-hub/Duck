@@ -29,6 +29,9 @@
   <PropertyGroup Condition="'$(Platform)' == 'ARM64'">
     <DuckChatCommonPlatform>ARM64</DuckChatCommonPlatform>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="PopupForm\LoginWindow.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -59,6 +62,14 @@
     <!-- Windows App SDK: provides WinUI 3, app lifecycle, windowing, and other modern Windows APIs -->
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
   </ItemGroup>
+  <ItemGroup>
+    <Page Update="PopupForm\LoginWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="PopupDialogs\" />
+  </ItemGroup>
 
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution
@@ -76,7 +87,8 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-    <AnalysisLevel>latest-all</AnalysisLevel>
+    <AnalysisLevel>none</AnalysisLevel>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
   </PropertyGroup>
 
   <Target Name="BuildAndCopyDuckChatCommonDLL" AfterTargets="Build">

@@ -31,10 +31,10 @@
         </NavigationView.MenuItems>
 
         <NavigationView.FooterMenuItems>
-            <NavigationViewItem Content="Add a Server" Tag="Add a Server" Icon="Add" />
+            <NavigationViewItem Content="User Information" Tag="Setting Information" Icon="ContactInfo" />
         </NavigationView.FooterMenuItems>
 
-        <Grid>
+        <Grid x:Name="RootGrid">
             <Grid.RowDefinitions>
                 <RowDefinition Height="48" />
                 <RowDefinition Height="*" />

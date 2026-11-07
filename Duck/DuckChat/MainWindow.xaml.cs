@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using DuckChat.DllRapper;
+using DuckChat.DuckChat.User;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -25,6 +27,7 @@ namespace DuckChat
 
         #region 통신 속성
         private readonly NativeDuckClient mClient;
+        private UserInfo mLoginUser;
         public const string DEFAULT_ADDRESS = "localhost";
         public const string DEFAULT_PORT = "27015";
         #endregion
@@ -35,17 +38,55 @@ namespace DuckChat
 
             mClient = new NativeDuckClient(DEFAULT_ADDRESS, DEFAULT_PORT);
 
-            AppWindow.Resize(new SizeInt32(MIN_WIDTH, MIN_HEIGHT));
-            SetPresenter();
+            AppWindow.Resize(new SizeInt32(MIN_WIDTH * 2, MIN_HEIGHT * 2));
+            setPresenter();
+
+            RootGrid.Loaded += rootGrid_Loaded;
         }
 
-        private void SetPresenter()
+        private void setPresenter()
         {
             OverlappedPresenter presenter = OverlappedPresenter.Create();
             presenter.PreferredMinimumWidth = MIN_WIDTH;
             presenter.PreferredMinimumHeight = MIN_HEIGHT;
 
             AppWindow.SetPresenter(presenter);
+        }
+
+        private async Task<bool> login()
+        {
+            TextBox nameTextBox = new TextBox();
+            nameTextBox.PlaceholderText = "닉네임을 입력하세요";
+
+            ContentDialog dialog = new ContentDialog();
+            dialog.Title = "사용자 정보";
+            dialog.Content = nameTextBox;
+            dialog.PrimaryButtonText = "확인";
+            dialog.CloseButtonText = "취소";
+            dialog.DefaultButton = ContentDialogButton.Primary;
+            dialog.XamlRoot = RootGrid.XamlRoot;
+
+            ContentDialogResult result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                mLoginUser = new UserInfo(nameTextBox.Text, "");
+                return true;
+            }
+
+            return false;
+        }
+
+        private async void rootGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+            RootGrid.Loaded -= rootGrid_Loaded;
+
+            bool bLoggedIn = await login();
+
+            if (!bLoggedIn)
+            {
+                Close();
+            }
         }
 
         private void serverNavigationView_SelectionChanged(
