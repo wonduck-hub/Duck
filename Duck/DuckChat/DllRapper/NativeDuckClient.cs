@@ -60,7 +60,7 @@ namespace DuckChat.DllRapper
         {
             Debug.Assert(Handle != IntPtr.Zero);
 
-            byte[] buffer = stringToByteArrya(chat);
+            byte[] buffer = stringToByteArray(chat);
 
             bool result = DuckClientSendChat(Handle, buffer, (uint)buffer.Length);
 
@@ -73,7 +73,7 @@ namespace DuckChat.DllRapper
             return DuckClientTryRecv(Handle, outBuffer, (uint)outBuffer.Length, ref outChatSize);
         }
 
-        private byte[] stringToByteArrya(string str)
+        private byte[] stringToByteArray(string str)
         {
             byte[] result = new byte[str.Length];
 
@@ -81,6 +81,8 @@ namespace DuckChat.DllRapper
             {
                 result[index] = (byte)str[index];
             }
+
+            Debug.Assert(result.Length == str.Length);
 
             return result;
         }

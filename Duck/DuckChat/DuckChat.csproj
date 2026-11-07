@@ -75,17 +75,13 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
   <Target Name="BuildAndCopyDuckChatCommonDLL" AfterTargets="Build">
-    <MSBuild Projects="$(DuckChatCommonProject)"
-			 Targets="Build"
-			 Properties="Configuration=$(Configuration);Platform=$(DuckChatCommonPlatform)" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll"
-		  DestinationFolder="$(TargetDir)"
-		  SkipUnchangedFiles="true" />
-	<Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll"
-		  DestinationFolder="$(TargetDir)AppX"
-		  SkipUnchangedFiles="true" />
+    <MSBuild Projects="$(DuckChatCommonProject)" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(DuckChatCommonPlatform)" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+	<Copy SourceFiles="$(MSBuildThisFileDirectory)..\DuckChatServer\bin\Common\$(DuckChatCommonPlatform)\$(Configuration)\DuckChatCommon.dll" DestinationFolder="$(TargetDir)AppX" SkipUnchangedFiles="true" />
   </Target>
 </Project>
