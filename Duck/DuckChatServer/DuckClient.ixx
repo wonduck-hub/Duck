@@ -50,14 +50,10 @@ namespace Duck
 				return;
 			}
 
-			if (mSocket != INVALID_SOCKET) // 이렇게 shutdown을 해야 Receive에서 무한이 recv 함수를 기다리는 사태를 막음
-			{
-				shutdown(mSocket, SD_RECEIVE);
-			}
+			mIsReceive = false;
 
 			if (mReceiveThread.joinable())
 			{
-				mIsReceive = false;
 				mReceiveThread.join();
 			}
 		}
@@ -210,6 +206,25 @@ namespace Duck
 
 			while (mIsReceive)
 			{
+				fd_set readSockets;
+				FD_ZERO(&readSockets);
+				FD_SET(mSocket, &readSockets);
+				timeval timeout = { 0, 100000 };
+				int selectResult = select(0, &readSockets, nullptr, nullptr, &timeout);
+				if (selectResult == 0)
+				{
+					continue;
+				}
+				if (selectResult == SOCKET_ERROR)
+				{
+					std::cerr << "select failed: " << WSAGetLastError() << std::endl;
+					break;
+				}
+				if (!mIsReceive)
+				{
+					break;
+				}
+
 				result = recv(mSocket, recvBuffer, recvBufferLen, 0);
 
 				if (result > 0)
@@ -235,6 +250,9 @@ namespace Duck
 				{
 					break;
 				}
+
+				std::cerr << "recv failed: " << WSAGetLastError() << std::endl;
+				break;
 			}
 		}
 

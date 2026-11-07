@@ -27,7 +27,12 @@
       <Platform Solution="*|x86" Project="x86" />
       <Deploy />
     </Project>
-    <Project Path="DuckChatForm/DuckChatForm.csproj" Id="cb9a4329-6be3-4d18-930e-5f62453f301a" />
+    <Project Path="DuckChatForm/DuckChatForm.csproj" Id="cb9a4329-6be3-4d18-930e-5f62453f301a">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|ARM64" Project="ARM64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
     <Project Path="DuckChatServer/DuckChatCommon.vcxproj" Id="131a8dad-0b7b-40a7-8ac8-c036612a83ca" />
     <Project Path="DuckChatServer/DuckChatServer.vcxproj" Id="d0ed02b0-9832-4a1c-bf9d-591be7c793fa" />
     <Project Path="DuckHex/DuckHex.vcxproj" Id="9c2ebf12-05eb-4a59-bc58-25b58ebe31d2" />

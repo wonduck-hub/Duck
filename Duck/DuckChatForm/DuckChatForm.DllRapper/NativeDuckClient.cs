@@ -1,99 +1,79 @@
-
-using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DuckChat.DllRapper
 {
-    internal class NativeDuckClient : IDisposable
+    internal sealed class NativeDuckClient : IDisposable
     {
-        [DllImport("DuckChatCommon.dll",
-            EntryPoint = "DuckClientConnect",
-            CallingConvention = CallingConvention.Cdecl,
-            CharSet = CharSet.Ansi)]
-        private static extern IntPtr DuckClientConnect(
+        private const int RECEIVE_BUFFER_SIZE = 1024;
+        private IntPtr mHandle;
+
+        [DllImport("DuckChatCommon.dll", EntryPoint = "DuckClientConnect", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr duckClientConnect(
             [MarshalAs(UnmanagedType.LPStr)] string address,
-            [MarshalAs(UnmanagedType.LPStr)] string port
-            );
+            [MarshalAs(UnmanagedType.LPStr)] string port);
 
-        [DllImport("DuckChatCommon.dll",
-            EntryPoint = "DuckClientDisconnect",
-            CallingConvention = CallingConvention.Cdecl,
-            CharSet = CharSet.Ansi)]
-        private static extern void DuckClientDisconnect(IntPtr client);
+        [DllImport("DuckChatCommon.dll", EntryPoint = "DuckClientDisconnect", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void duckClientDisconnect(IntPtr client);
 
-        [DllImport("DuckChatCommon.dll",
-            EntryPoint = "DuckClientSendChat",
-            CallingConvention = CallingConvention.Cdecl,
-            CharSet = CharSet.Ansi)]
-        private static extern bool DuckClientSendChat(
+        [DllImport("DuckChatCommon.dll", EntryPoint = "DuckClientSendChat", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int duckClientSendChat(IntPtr client, byte[] chat, nuint chatSize);
+
+        [DllImport("DuckChatCommon.dll", EntryPoint = "DuckClientTryRecv", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int duckClientTryRecv(
             IntPtr client,
-            byte[] chat,
-            uint chatSize);
-
-        [DllImport("DuckChatCommon.dll",
-            EntryPoint = "DuckClientTryRecv",
-            CallingConvention = CallingConvention.Cdecl,
-            CharSet = CharSet.Ansi)]
-        private static extern bool DuckClientTryRecv(
-            IntPtr client,
-            byte[] outChatBuffer,
+            [Out] byte[] outChatBuffer,
             uint bufferCapacity,
-            ref uint outChatLength);
+            ref nuint outChatLength);
 
         public NativeDuckClient(string address, string port)
         {
-            Address = address;
-            Port = port;
-            Handle = DuckClientConnect(address, port);
+            mHandle = duckClientConnect(address, port);
+            if (mHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("서버에 연결할 수 없습니다: " + address + ":" + port);
+            }
         }
 
         public void Dispose()
         {
-            DuckClientDisconnect(Handle);
-
-            Handle = IntPtr.Zero;
-            Address = string.Empty;
-            Port = string.Empty;
-        }
-
-        public bool IsConnected()
-        {
-            return Handle != IntPtr.Zero;
+            if (mHandle != IntPtr.Zero)
+            {
+                duckClientDisconnect(mHandle);
+                mHandle = IntPtr.Zero;
+            }
         }
 
         public bool SendChat(string chat)
         {
-            Debug.Assert(Handle != IntPtr.Zero);
-
-            byte[] buffer = stringToByteArray(chat);
-
-            bool result = DuckClientSendChat(Handle, buffer, (uint)buffer.Length);
-
-            return result;
-        }
-
-        public bool TryRecvChat(ref byte[] outBuffer, ref uint outChatSize)
-        {
-            outBuffer = new byte[1024];
-            return DuckClientTryRecv(Handle, outBuffer, (uint)outBuffer.Length, ref outChatSize);
-        }
-
-        private byte[] stringToByteArray(string str)
-        {
-            byte[] result = new byte[str.Length];
-
-            for (int index = 0; index < str.Length; ++index)
+            throwIfDisposed();
+            byte[] buffer = Encoding.UTF8.GetBytes(chat);
+            if (buffer.Length > RECEIVE_BUFFER_SIZE)
             {
-                result[index] = (byte)str[index];
+                throw new ArgumentException("메시지는 UTF-8 기준 1024바이트 이하여야 합니다.", nameof(chat));
             }
 
-            Debug.Assert(result.Length == str.Length);
-
-            return result;
+            return duckClientSendChat(mHandle, buffer, (nuint)buffer.Length) != 0;
         }
 
-        public IntPtr Handle { get; private set; }
-        public string Address { get; private set; }
-        public string Port { get; private set; }
+        public bool TryRecvChat(out byte[] outBuffer, out uint outChatSize)
+        {
+            throwIfDisposed();
+            outBuffer = new byte[RECEIVE_BUFFER_SIZE];
+            nuint chatLength = 0;
+            bool bReceived = duckClientTryRecv(mHandle, outBuffer, (uint)outBuffer.Length, ref chatLength) != 0;
+            if (chatLength > (nuint)outBuffer.Length)
+            {
+                throw new InvalidDataException("수신한 메시지가 버퍼 크기를 초과합니다.");
+            }
+
+            outChatSize = (uint)chatLength;
+            return bReceived;
+        }
+
+        private void throwIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(mHandle == IntPtr.Zero, this);
+        }
     }
 }

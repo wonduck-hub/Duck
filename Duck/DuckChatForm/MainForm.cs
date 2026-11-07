@@ -13,8 +13,8 @@ namespace DuckChatForm
         #endregion
 
         #region 통신 속성
-        private readonly NativeDuckClient mClient;
-        private UserInfo mLoginUser;
+        private NativeDuckClient? mClientOrNull;
+        private UserInfo? mLoginUserOrNull;
         public const string DEFAULT_ADDRESS = "localhost";
         public const string DEFAULT_PORT = "27015";
         #endregion
@@ -22,41 +22,96 @@ namespace DuckChatForm
         public MainForm()
         {
             InitializeComponent();
-
-            mClient = new NativeDuckClient(DEFAULT_ADDRESS, DEFAULT_PORT);
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            LoginForm lf = new LoginForm();
-            if (lf.ShowDialog(this) == DialogResult.OK)
+            using (LoginForm loginForm = new LoginForm())
             {
-                mLoginUser = new UserInfo(lf.UserName, "");
-            }
-            else
-            {
-                MessageBox.Show("로그인을 해야만 사용할 수 있습니다.", "Error");
-                this.Close();
+                if (loginForm.ShowDialog(this) != DialogResult.OK)
+                {
+                    MessageBox.Show("로그인을 해야만 사용할 수 있습니다.", "Error");
+                    Close();
+                    return;
+                }
+
+                mLoginUserOrNull = new UserInfo(loginForm.UserName, "");
             }
 
-            
-            mClient.IsConnected();
+            try
+            {
+                mClientOrNull = new NativeDuckClient(DEFAULT_ADDRESS, DEFAULT_PORT);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException
+                || exception is DllNotFoundException
+                || exception is EntryPointNotFoundException
+                || exception is BadImageFormatException)
+            {
+                MessageBox.Show(this, exception.Message, "서버 연결 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+            }
         }
 
         private void changeLoginToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            LoginForm lf = new LoginForm();
-            if (lf.ShowDialog(this) == DialogResult.OK)
+            using (LoginForm loginForm = new LoginForm())
             {
-                mLoginUser = new UserInfo(lf.UserName, "");
+                if (loginForm.ShowDialog(this) == DialogResult.OK)
+                {
+                    mLoginUserOrNull = new UserInfo(loginForm.UserName, "");
+                }
             }
-
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AboutBox ab = new AboutBox();
-            ab.ShowDialog(this);
+            using (AboutBox aboutBox = new AboutBox())
+            {
+                aboutBox.ShowDialog(this);
+            }
+        }
+
+        private void buttonSend_Click(object sender, EventArgs e)
+        {
+            string message = textBoxMessage.Text.Trim();
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (mClientOrNull == null)
+            {
+                MessageBox.Show(this, "서버에 연결되어 있지 않습니다.", "전송 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                if (!mClientOrNull.SendChat(message))
+                {
+                    MessageBox.Show(this, "메시지를 전송하지 못했습니다.", "전송 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            catch (ArgumentException exception)
+            {
+                MessageBox.Show(this, exception.Message, "전송 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            listBoxMessages.Items.Add("나: " + message);
+            listBoxMessages.TopIndex = listBoxMessages.Items.Count - 1;
+            textBoxMessage.Clear();
+            textBoxMessage.Focus();
+        }
+
+        private void disposeClient()
+        {
+            if (mClientOrNull != null)
+            {
+                mClientOrNull.Dispose();
+                mClientOrNull = null;
+            }
         }
     }
 }

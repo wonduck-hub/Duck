@@ -13,6 +13,10 @@ namespace DuckChatForm
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                disposeClient();
+            }
             if (disposing && (components != null))
             {
                 components.Dispose();
@@ -45,6 +49,7 @@ namespace DuckChatForm
             panelLeft = new Panel();
             treeView1 = new TreeView();
             buttonSetting = new Button();
+            listBoxMessages = new ListBox();
             menuStrip1.SuspendLayout();
             panelSend.SuspendLayout();
             panelLeft.SuspendLayout();
@@ -117,6 +122,7 @@ namespace DuckChatForm
             buttonSend.TabIndex = 1;
             buttonSend.Text = "Send";
             buttonSend.UseVisualStyleBackColor = true;
+            buttonSend.Click += buttonSend_Click;
             // 
             // textBoxMessage
             // 
@@ -162,12 +168,20 @@ namespace DuckChatForm
             buttonSetting.TabIndex = 0;
             buttonSetting.Text = "Setting";
             buttonSetting.UseVisualStyleBackColor = true;
+            //
+            // listBoxMessages
+            //
+            listBoxMessages.Dock = DockStyle.Fill;
+            listBoxMessages.FormattingEnabled = true;
+            listBoxMessages.Name = "listBoxMessages";
+            listBoxMessages.TabIndex = 3;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(15F, 37F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1597, 910);
+            Controls.Add(listBoxMessages);
             Controls.Add(panelSend);
             Controls.Add(panelLeft);
             Controls.Add(menuStrip1);
@@ -200,5 +214,6 @@ namespace DuckChatForm
         private Button buttonSetting;
         private TreeView treeView1;
         private ToolStripMenuItem aboutToolStripMenuItem;
+        private ListBox listBoxMessages;
     }
 }
