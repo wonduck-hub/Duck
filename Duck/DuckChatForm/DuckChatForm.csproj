@@ -23,6 +23,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DuckChatForm.CustomControl\**" />
+    <EmbeddedResource Remove="DuckChatForm.CustomControl\**" />
+    <None Remove="DuckChatForm.CustomControl\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\duck\source\repos\MyProject\Duck\DuckChatForm\..\DuckChatServer\bin\Common\x64\Debug\DuckChatCommon.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\duck\source\repos\MyProject\Duck\DuckChatForm\..\DuckChatServer\bin\Common\x64\Debug\DuckChatCommon.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="$(DuckChatCommonDll)" Link="DuckChatCommon.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -34,10 +48,6 @@
 
   <ItemGroup>
     <PackageReference Include="winforms.datavisualization" Version="1.10.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="DuckChatForm.CustomControl\" />
   </ItemGroup>
 
   <ItemGroup>

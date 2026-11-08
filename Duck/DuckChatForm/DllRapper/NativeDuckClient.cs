@@ -6,6 +6,14 @@ namespace DuckChatForm.DllRapper
 {
     internal sealed class NativeDuckClient : IDisposable
     {
+        public bool IsConnected
+        {
+            get
+            {
+                return mHandle != IntPtr.Zero;
+            }
+            private set;
+        }
         private const int RECEIVE_BUFFER_SIZE = 1024;
         private IntPtr mHandle;
 
@@ -49,12 +57,20 @@ namespace DuckChatForm.DllRapper
         {
             Debug.Assert(mHandle != IntPtr.Zero);
 
-            byte[] buffer = Encoding.UTF8.GetBytes(chat);
+            byte[] chatBuffer = Encoding.UTF8.GetBytes(chat);
             //TODO: buffer에 채팅 저보 뿐만 아니라 자용자 정보, 전송 시간, 목표 채팅방 등을 포함시켜야 함
 
-            Debug.Assert(buffer.Length <= RECEIVE_BUFFER_SIZE);
+            Debug.Assert(chatBuffer.Length <= RECEIVE_BUFFER_SIZE);
 
-            return duckClientSendChat(mHandle, buffer, (nuint)buffer.Length) != 0;
+            try
+            {
+                bool result = duckClientSendChat(mHandle, chatBuffer, (nuint)chatBuffer.Length) != 0;
+                return result;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public bool TryRecvChat(out byte[] outBuffer, out uint outChatSize)
