@@ -1,5 +1,5 @@
-using DuckChat.DllRapper;
-using DuckChat.DuckChat.User;
+using DuckChatForm.DllRapper;
+using DuckChatForm.DuckChat.User;
 using DuckChatForm.DuckChatForm.CustomControl;
 using DuckChatForm.DuckChatForm.Popup;
 

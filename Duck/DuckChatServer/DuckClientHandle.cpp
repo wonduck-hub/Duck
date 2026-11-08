@@ -61,7 +61,7 @@ extern "C"
 			payloadBytes.assign(payload, payload + payloadLength);
 		}
 
-		Duck::DuckPacket packet(
+		Duck::DuckPacket packet = Duck::DuckPacket(
 			Duck::EVersion::VERSION1,
 			static_cast<Duck::ECommand>(Duck::ECommand::CHAT),
 			std::move(payloadBytes));

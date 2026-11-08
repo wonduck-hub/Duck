@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace DuckChat.DllRapper
+namespace DuckChatForm.DllRapper
 {
     internal class NativeDuckClient : IDisposable
     {

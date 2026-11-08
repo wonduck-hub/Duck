@@ -1,7 +1,8 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace DuckChat.DllRapper
+namespace DuckChatForm.DllRapper
 {
     internal sealed class NativeDuckClient : IDisposable
     {
@@ -46,34 +47,28 @@ namespace DuckChat.DllRapper
 
         public bool SendChat(string chat)
         {
-            throwIfDisposed();
+            Debug.Assert(mHandle != IntPtr.Zero);
+
             byte[] buffer = Encoding.UTF8.GetBytes(chat);
-            if (buffer.Length > RECEIVE_BUFFER_SIZE)
-            {
-                throw new ArgumentException("메시지는 UTF-8 기준 1024바이트 이하여야 합니다.", nameof(chat));
-            }
+            //TODO: buffer에 채팅 저보 뿐만 아니라 자용자 정보, 전송 시간, 목표 채팅방 등을 포함시켜야 함
+
+            Debug.Assert(buffer.Length <= RECEIVE_BUFFER_SIZE);
 
             return duckClientSendChat(mHandle, buffer, (nuint)buffer.Length) != 0;
         }
 
         public bool TryRecvChat(out byte[] outBuffer, out uint outChatSize)
         {
-            throwIfDisposed();
+            Debug.Assert(mHandle != IntPtr.Zero);
+
             outBuffer = new byte[RECEIVE_BUFFER_SIZE];
             nuint chatLength = 0;
             bool bReceived = duckClientTryRecv(mHandle, outBuffer, (uint)outBuffer.Length, ref chatLength) != 0;
-            if (chatLength > (nuint)outBuffer.Length)
-            {
-                throw new InvalidDataException("수신한 메시지가 버퍼 크기를 초과합니다.");
-            }
+
+            Debug.Assert(chatLength <= (nuint)outBuffer.Length);
 
             outChatSize = (uint)chatLength;
             return bReceived;
-        }
-
-        private void throwIfDisposed()
-        {
-            ObjectDisposedException.ThrowIf(mHandle == IntPtr.Zero, this);
         }
     }
 }

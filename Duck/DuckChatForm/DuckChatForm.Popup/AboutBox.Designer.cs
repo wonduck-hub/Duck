@@ -88,7 +88,7 @@ namespace DuckChatForm.DuckChatForm.CustomControl
             labelProductName.Name = "labelProductName";
             labelProductName.Size = new Size(677, 48);
             labelProductName.TabIndex = 19;
-            labelProductName.Text = "DuckChat";
+            labelProductName.Text = "DuckChatForm";
             labelProductName.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // labelVersion
