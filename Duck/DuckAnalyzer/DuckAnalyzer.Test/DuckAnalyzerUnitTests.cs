@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VerifyCS = DuckAnalyzer.Test.CSharpCodeFixVerifier<
-    DuckAnalyzer.DuckAnalyzerAnalyzer,
+    DuckAnalyzer.DuckCSharpAnalyzer,
     DuckAnalyzer.DuckAnalyzerCodeFixProvider>;
 
 namespace DuckAnalyzer.Test

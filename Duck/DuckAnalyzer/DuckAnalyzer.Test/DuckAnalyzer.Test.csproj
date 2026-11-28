@@ -24,4 +24,8 @@
     <ProjectReference Include="..\DuckAnalyzer\DuckAnalyzer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <GlobalAnalyzerConfigFiles Include="..\Analyzer1\MyCodeAnalyzer.globalconfig" />
+  </ItemGroup>
+
 </Project>

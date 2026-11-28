@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace DuckAnalyzer
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class DuckAnalyzerAnalyzer : DiagnosticAnalyzer
+    public class DuckCSharpAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DuckAnalyzer";
 
